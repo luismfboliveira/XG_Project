@@ -49,28 +49,6 @@ ggsave("papers_year.pdf", plot = papers_year, device = "pdf", path = directories
 ggsave("papers_year.jpeg", plot = papers_year, device = "jpeg", path = directories$dir_general_analysis, units = "in",
        width = 10, height = 6)
 
-jpeg(file = paste(directories$dir_general_analysis, "papers_year.jpeg", sep = "/"),
-    width = 10, height = 6, units = "in", res = 720)
-
-papers_countries_per_year %>%  
-  mutate(Period  = if_else(PY <= 2011, "Before Take off", "After Take off")) %>% 
-  ggplot(aes(x = PY, y = papers_year, group = 1)) +
-  geom_line(color = "grey") +
-  geom_point(aes(colour = Period), shape=20, size=15) +
-  geom_text(aes(label=papers_year),color = "white", size = 4) + 
-  #scale_x_continuous(limits = seq(min(M$PY), max(M$PY), 1)) +
-  theme(panel.grid.minor.y = element_blank(),
-        panel.grid.major.y = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        axis.text.y = element_blank(), legend.text = element_text(size = 11),
-        axis.text.x = element_text(size = 10), panel.border = element_blank()) +
-  labs(title = "Research items published on 4G from 2000-2020",
-       y = "",
-       x = "",
-       colour = "")
-
-dev.off()
-
 # Plots countries producing per year
 
 countries_year <- 
