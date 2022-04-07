@@ -474,10 +474,10 @@ author_dominant_affil <-
 
 
 ggsave("author_dominant_affil.pdf", plot = author_dominant_affil, device = "pdf", path = directories$dir_authors, units = "in",
-       width = 60, height = 20)
+       width = 60, height = 20, limitsize = FALSE)
 
 ggsave("author_dominant_affil.jpeg", plot = author_dominant_affil, device = "jpeg", path = directories$dir_authors, units = "in",
-       width = 60, height = 20)
+       width = 60, height = 20, limitsize = FALSE)
 
 
 ###### Author report by most recent affiliation ######
@@ -513,10 +513,10 @@ author_recent_affil <-
 
 
 ggsave("author_recent_affil.pdf", plot = author_recent_affil, device = "pdf", path = directories$dir_authors, units = "in",
-       width = 60, height = 20)
+       width = 60, height = 20, limitsize = FALSE)
 
 ggsave("author_recent_affil.jpeg", plot = author_recent_affil, device = "jpeg", path = directories$dir_authors, units = "in",
-       width = 60, height = 20)
+       width = 60, height = 20, limitsize = FALSE)
 
 
 ##### Countries #####
@@ -731,10 +731,10 @@ top30_articles_country_1MHab <-
 
 
 ggsave("top30_articles_country_1MHab.pdf", plot = top30_articles_country_1MHab, device = "pdf", path = directories$dir_authors, units = "in",
-       width = 60, height = 20)
+       width = 60, height = 20, limitsize = FALSE)
 
 ggsave("top30_articles_country_1MHab.jpeg", plot = top30_articles_country_1MHab, device = "jpeg", path = directories$dir_authors, units = "in",
-       width = 60, height = 20)
+       width = 60, height = 20, limitsize = FALSE)
 
 # Removes Antarctica from World_map dataset
 world_map <- map_data("world") %>% filter(region != "Antarctica") %>% mutate(region = str_to_upper(region))
