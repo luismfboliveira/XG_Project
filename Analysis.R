@@ -36,13 +36,6 @@ papers_year <-
        x = "",
        colour = "")
 
-# pdf(file = paste(directories$dir_general_analysis, "papers_year.pdf", sep = "/"),
-#     width = 10, height = 6)
-# 
-# papers_year
-# 
-# dev.off()s
-
 ggsave("papers_year.pdf", plot = papers_year, device = "pdf", path = directories$dir_general_analysis, units = "in",
        width = 10, height = 6)
 
@@ -68,19 +61,11 @@ countries_year <-
        x = "",
        y = "")
 
-pdf(file = paste(directories$dir_general_analysis, "countries_year.pdf", sep = "/"),
-    width = 10, height = 6)
+ggsave("countries_year.pdf", plot = countries_year, device = "pdf", path = directories$dir_general_analysis, units = "in",
+       width = 10, height = 6)
 
-countries_year
-
-dev.off()
-
-jpeg(file = paste(directories$dir_general_analysis, "countries_year.jpeg", sep = "/"),
-    width = 10, height = 6, units = "in", res = 720)
-
-countries_year
-
-dev.off()
+ggsave("countries_year.jpeg", plot = countries_year, device = "jpeg", path = directories$dir_general_analysis, units = "in",
+       width = 10, height = 6)
 
 
 ###### Number of authors per articles, countries, only 1 author, only one country, journals ######
@@ -195,19 +180,12 @@ herfindahal_index_country <-
        y = "") +
   expand_limits(y = 0)
 
-pdf(file = paste(directories$dir_herfindahal, "Herfindahal_index_country.pdf", sep = "/"),
-    width = 10, height = 6)
 
-herfindahal_index_country
+ggsave("Herfindahal_index_country.pdf", plot = herfindahal_index_country, device = "pdf", path = directories$dir_herfindahal, units = "in",
+       width = 10, height = 6)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_herfindahal, "Herfindahal_index_country.jpeg", sep = "/"),
-    width = 10, height = 6, units = "in", res = 720)
-
-herfindahal_index_country
-
-dev.off()
+ggsave("Herfindahal_index_country.jpeg", plot = herfindahal_index_country, device = "jpeg", path = directories$dir_herfindahal, units = "in",
+       width = 10, height = 6)
 
 
 ###### Evolution for the 5 most productive countries (by leading articles) ######
@@ -230,20 +208,12 @@ country_shares_top_5 <-
        y = "",
        color = "Country")
 
-pdf(file = paste(directories$dir_herfindahal, "country_shares_top5.pdf", sep = "/"),
-    width = 10, height = 6)
 
-country_shares_top_5
+ggsave("country_shares_top5.pdf", plot = country_shares_top_5, device = "pdf", path = directories$dir_herfindahal, units = "in",
+       width = 10, height = 6)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_herfindahal, "country_shares_top5.jpeg", sep = "/"),
-     width = 10, height = 6, units = "in", res = 720)
-
-country_shares_top_5
-
-dev.off()
-
+ggsave("country_shares_top5.jpeg", plot = country_shares_top_5, device = "jpeg", path = directories$dir_herfindahal, units = "in",
+       width = 10, height = 6)
 
 ###### Journal shares ######
 
@@ -295,19 +265,13 @@ herfindahal_index_journals <-
        y = "") +
   expand_limits(y = 0)
 
-pdf(file = paste(directories$dir_herfindahal, "herfindahal_index_journals.pdf", sep = "/"),
-    width = 10, height = 6)
 
-herfindahal_index_journals
+ggsave("herfindahal_index_journals.pdf", plot = herfindahal_index_journals, device = "pdf", path = directories$dir_herfindahal, units = "in",
+       width = 10, height = 6)
 
-dev.off()
+ggsave("herfindahal_index_journals.jpeg", plot = herfindahal_index_journals, device = "jpeg", path = directories$dir_herfindahal, units = "in",
+       width = 10, height = 6)
 
-jpeg(file = paste(directories$dir_herfindahal, "herfindahal_index_journals.jpeg", sep = "/"),
-     width = 10, height = 6, units = "in", res = 720)
-
-herfindahal_index_journals
-
-dev.off()
 
 ##### Authors #####
 
@@ -508,19 +472,12 @@ author_dominant_affil <-
         strip.text = element_text(size = 40),
         legend.title = element_text(size = 15))
 
-pdf(file = paste(directories$dir_authors, "author_dominant_affil.pdf", sep = "/"),
-    width = 60, height = 20)
 
-author_dominant_affil
+ggsave("author_dominant_affil.pdf", plot = author_dominant_affil, device = "pdf", path = directories$dir_authors, units = "in",
+       width = 60, height = 20)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_authors, "author_dominant_affil.jpeg", sep = "/"),
-     width = 60, height = 20, units = "in", res = 140)
-
-author_dominant_affil
-
-dev.off()
+ggsave("author_dominant_affil.jpeg", plot = author_dominant_affil, device = "jpeg", path = directories$dir_authors, units = "in",
+       width = 60, height = 20)
 
 
 ###### Author report by most recent affiliation ######
@@ -554,19 +511,12 @@ author_recent_affil <-
         strip.text = element_text(size = 40),
         legend.title = element_text(size = 15))
 
-pdf(file = paste(directories$dir_authors, "author_recent_affil.pdf", sep = "/"),
-    width = 60, height = 20)
 
-author_recent_affil
+ggsave("author_recent_affil.pdf", plot = author_recent_affil, device = "pdf", path = directories$dir_authors, units = "in",
+       width = 60, height = 20)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_authors, "author_recent_affil.jpeg", sep = "/"),
-     width = 60, height = 20, units = "in", res = 140)
-
-author_recent_affil
-
-dev.off()
+ggsave("author_recent_affil.jpeg", plot = author_recent_affil, device = "jpeg", path = directories$dir_authors, units = "in",
+       width = 60, height = 20)
 
 
 ##### Countries #####
@@ -780,19 +730,11 @@ top30_articles_country_1MHab <-
   scale_x_reordered()
 
 
-pdf(file = paste(directories$dir_authors, "top30_articles_country_1MHab.pdf", sep = "/"),
-    width = 60, height = 20)
+ggsave("top30_articles_country_1MHab.pdf", plot = top30_articles_country_1MHab, device = "pdf", path = directories$dir_authors, units = "in",
+       width = 60, height = 20)
 
-top30_articles_country_1MHab
-
-dev.off()
-
-jpeg(file = paste(directories$dir_authors, "top30_articles_country_1MHab.jpeg", sep = "/"),
-     width = 60, height = 20, units = "in", res = 140)
-
-top30_articles_country_1MHab
-
-dev.off()
+ggsave("top30_articles_country_1MHab.jpeg", plot = top30_articles_country_1MHab, device = "jpeg", path = directories$dir_authors, units = "in",
+       width = 60, height = 20)
 
 # Removes Antarctica from World_map dataset
 world_map <- map_data("world") %>% filter(region != "Antarctica") %>% mutate(region = str_to_upper(region))
@@ -827,19 +769,12 @@ map_number_articles_country <-
        subtitle = "Colour scale in logarithmic scale\nGrey countries have 0 articles",
        fill = "Number of articles")
 
-pdf(file = paste(directories$dir_general_analysis, "map_number_articles_country.pdf", sep = "/"),
-    width = 10, height = 6)
 
-map_number_articles_country
+ggsave("map_number_articles_country.pdf", plot = map_number_articles_country, device = "pdf", path = directories$dir_general_analysis, units = "in",
+       width = 10, height = 6)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_general_analysis, "map_number_articles_country.jpeg", sep = "/"),
-     width = 10, height = 6, units = "in", res = 720)
-
-map_number_articles_country
-
-dev.off()
+ggsave("map_number_articles_country.jpeg", plot = map_number_articles_country, device = "jpeg", path = directories$dir_general_analysis, units = "in",
+       width = 10, height = 6)
 
 ##### Country Network #####
 
@@ -1048,19 +983,13 @@ fill_academic_non_academic_top20_art <-
         axis.text.y = element_text(size = 14), axis.text.x = element_blank(), axis.ticks.x = element_blank(),
         legend.title = element_text(size = 15), legend.position = "none")
 
-pdf(file = paste(directories$dir_affiliations, "fill_academic_non_academic_top20_art.pdf", sep = "/"),
-    width = 15, height = 6)
 
-fill_academic_non_academic_top20_art
+ggsave("fill_academic_non_academic_top20_art.pdf", plot = fill_academic_non_academic_top20_art, device = "pdf", path = directories$dir_affiliations, units = "in",
+       width = 15, height = 6)
 
-dev.off()
+ggsave("fill_academic_non_academic_top20_art.jpeg", plot = fill_academic_non_academic_top20_art, device = "jpeg", path = directories$dir_affiliations, units = "in",
+       width = 15, height = 6)
 
-jpeg(file = paste(directories$dir_affiliations, "fill_academic_non_academic_top20_art.jpeg", sep = "/"),
-     width = 15, height = 6, units = "in", res = 720)
-
-fill_academic_non_academic_top20_art
-
-dev.off()
 
 ###### Plots top 20 affiliations, filled by academic. ######
 
@@ -1095,19 +1024,12 @@ fill_academic_top20_art_cit<-
         legend.title = element_text(size = 15), legend.position = "none") +
   scale_x_reordered()
 
-pdf(file = paste(directories$dir_affiliations, "fill_academic_top20_art_cit.pdf", sep = "/"),
-    width = 15, height = 6)
 
-fill_academic_top20_art_cit
+ggsave("fill_academic_top20_art_cit.pdf", plot = fill_academic_top20_art_cit, device = "pdf", path = directories$dir_affiliations, units = "in",
+       width = 15, height = 6)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_affiliations, "fill_academic_top20_art_cit.jpeg", sep = "/"),
-     width = 15, height = 6, units = "in", res = 720)
-
-fill_academic_top20_art_cit
-
-dev.off()
+ggsave("fill_academic_top20_art_cit.jpeg", plot = fill_academic_top20_art_cit, device = "jpeg", path = directories$dir_affiliations, units = "in",
+       width = 15, height = 6)
 
 ###### Plots information about number of articles and citation counts for non academic ######
 
@@ -1127,19 +1049,12 @@ fill_non_academic_top20_art_cit <-
         legend.title = element_text(size = 15), legend.position = "none") +
   scale_x_reordered()
 
-pdf(file = paste(directories$dir_affiliations, "fill_non_academic_top20_art_cit.pdf", sep = "/"),
-    width = 17, height = 6)
 
-fill_non_academic_top20_art_cit
+ggsave("fill_non_academic_top20_art_cit.pdf", plot = fill_non_academic_top20_art_cit, device = "pdf", path = directories$dir_affiliations, units = "in",
+       width = 17, height = 6)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_affiliations, "fill_non_academic_top20_art_cit.jpeg", sep = "/"),
-     width = 17, height = 6, units = "in", res = 720)
-
-fill_non_academic_top20_art_cit
-
-dev.off()
+ggsave("fill_non_academic_top20_art_cit.jpeg", plot = fill_non_academic_top20_art_cit, device = "jpeg", path = directories$dir_affiliations, units = "in",
+       width = 17, height = 6)
 
 print("Affiliation analysis: done")
 
@@ -1259,19 +1174,12 @@ most_cited_papers <-
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         axis.text.y = element_text(size = 32), axis.text.x = element_blank(), axis.ticks.x = element_blank())
 
-pdf(file = paste(directories$dir_most_cited_papers, "most_cited_papers.pdf", sep = "/"),
-    width = 30, height = 20)
 
-most_cited_papers
+ggsave("most_cited_papers.pdf", plot = most_cited_papers, device = "pdf", path = directories$dir_most_cited_papers, units = "in",
+       width = 30, height = 20)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_most_cited_papers, "most_cited_papers.jpeg", sep = "/"),
-     width = 30, height = 20, units = "in", res = 720)
-
-most_cited_papers
-
-dev.off()
+ggsave("most_cited_papers.jpeg", plot = most_cited_papers, device = "jpeg", path = directories$dir_most_cited_papers, units = "in",
+       width = 30, height = 20)
 
 # Exports titles, citation count, year, keywords, AU_CO.
 
@@ -1399,19 +1307,12 @@ keywords_clean_uni_median_evo <-
        y = "",
        fill = "Ranking of keyword\n(by # articles using)")
 
-pdf(file = paste(directories$dir_keywords, "keywords_clean_uni_median_evo.pdf", sep = "/"),
-    width = 15, height = 10)
 
-keywords_clean_uni_median_evo
+ggsave("keywords_clean_uni_median_evo.pdf", plot = keywords_clean_uni_median_evo, device = "pdf", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_keywords, "keywords_clean_uni_median_evo.jpeg", sep = "/"),
-     width = 15, height = 10, units = "in", res = 720)
-
-keywords_clean_uni_median_evo
-
-dev.off()
+ggsave("keywords_clean_uni_median_evo.jpeg", plot = keywords_clean_uni_median_evo, device = "jpeg", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
 ###### Evolution of top 30 keywords with highest median YoY growth UNI ######
 
@@ -1458,19 +1359,12 @@ growth_kw_uni_evo <-
        x = "",
        fill = "Cumulative articles using")
 
-pdf(file = paste(directories$dir_keywords, "growth_kw_uni_evo.pdf", sep = "/"),
-    width = 15, height = 10)
 
-growth_kw_uni_evo
+ggsave("growth_kw_uni_evo.pdf", plot = growth_kw_uni_evo, device = "pdf", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_keywords, "growth_kw_uni_evo.jpeg", sep = "/"),
-     width = 15, height = 10, units = "in", res = 720)
-
-growth_kw_uni_evo
-
-dev.off()
+ggsave("growth_kw_uni_evo.jpeg", plot = growth_kw_uni_evo, device = "jpeg", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
 print("Keywords unigrams: done")
 
@@ -1529,19 +1423,12 @@ keywords_clean_bi_median_evo <-
        y = "",
        fill = "Ranking of keyword\n(by # articles using)")
 
-pdf(file = paste(directories$dir_keywords, "keywords_clean_bi_median_evo.pdf", sep = "/"),
-    width = 15, height = 10)
 
-keywords_clean_bi_median_evo
+ggsave("keywords_clean_bi_median_evo.pdf", plot = keywords_clean_bi_median_evo, device = "pdf", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_keywords, "keywords_clean_bi_median_evo.jpeg", sep = "/"),
-     width = 15, height = 10, units = "in", res = 720)
-
-keywords_clean_bi_median_evo
-
-dev.off()
+ggsave("keywords_clean_bi_median_evo.jpeg", plot = keywords_clean_bi_median_evo, device = "jpeg", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
 ###### Evolution of top 30 keywords with highest median YoY growth BI ######
 
@@ -1588,19 +1475,12 @@ growth_kw_bi_evo <-
        x = "",
        fill = "Cumulative articles using")
 
-pdf(file = paste(directories$dir_keywords, "growth_kw_bi_evo.pdf", sep = "/"),
-    width = 15, height = 10)
 
-growth_kw_bi_evo
+ggsave("growth_kw_bi_evo.pdf", plot = growth_kw_bi_evo, device = "pdf", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_keywords, "growth_kw_bi_evo.jpeg", sep = "/"),
-     width = 15, height = 10, units = "in", res = 720)
-
-growth_kw_bi_evo
-
-dev.off()
+ggsave("growth_kw_bi_evo.jpeg", plot = growth_kw_bi_evo, device = "jpeg", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
 print("Keywords bigrams: done")
 
@@ -1659,19 +1539,12 @@ keywords_clean_tri_median_evo <-
        y = "",
        fill = "Ranking of keyword\n(by # articles using)")
 
-pdf(file = paste(directories$dir_keywords, "keywords_clean_tri_median_evo.pdf", sep = "/"),
-    width = 20, height = 10)
 
-keywords_clean_tri_median_evo
+ggsave("keywords_clean_tri_median_evo.pdf", plot = keywords_clean_tri_median_evo, device = "pdf", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_keywords, "keywords_clean_tri_median_evo.jpeg", sep = "/"),
-     width = 20, height = 10, units = "in", res = 720)
-
-keywords_clean_tri_median_evo
-
-dev.off()
+ggsave("keywords_clean_tri_median_evo.jpeg", plot = keywords_clean_tri_median_evo, device = "jpeg", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
 ###### Evolution of top 30 keywords with highest median YoY growth > BI ######
 
@@ -1718,20 +1591,12 @@ growth_kw_tri_evo <-
        x = "",
        fill = "Cumulative articles using")
 
-pdf(file = paste(directories$dir_keywords, "growth_kw_tri_evo.pdf", sep = "/"),
-    width = 15, height = 10)
 
-growth_kw_tri_evo
+ggsave("growth_kw_tri_evo.pdf", plot = growth_kw_tri_evo, device = "pdf", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
-dev.off()
-
-jpeg(file = paste(directories$dir_keywords, "growth_kw_tri_evo.jpeg", sep = "/"),
-     width = 15, height = 10, units = "in", res = 720)
-
-growth_kw_tri_evo
-
-dev.off()
-
+ggsave("growth_kw_tri_evo.jpeg", plot = growth_kw_tri_evo, device = "jpeg", path = directories$dir_keywords, units = "in",
+       width = 20, height = 10)
 
 print("Keywords > bigrams: done")
 
