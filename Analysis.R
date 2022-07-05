@@ -529,7 +529,7 @@ SJR_info <-
   select(article_id, PY, SO, SN, AU_CO) %>% 
   mutate(SN = str_replace_all(SN, "-", ""),
          PY = as.factor(PY)) %>% 
-  left_join(data %>% 
+  left_join(Journal_metrics_info %>% 
               separate_rows(Issn, sep = ",") %>% 
               mutate(Issn = trimws(Issn, which = "both")), by = c("SN" = "Issn", "PY" = "year")) %>% 
   arrange(SO, PY)

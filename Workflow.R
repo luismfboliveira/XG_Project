@@ -82,6 +82,10 @@ if (data_file_check$has_API_data) {
   
 }
 
+###### SJR Info ######
+
+load(paste(directories$dir_input_data, "Journal_metrics_info.RData", sep = "/"))
+
 ###### Aggregated SC categories ######
 
 Aggreagted_SC <- 
