@@ -294,7 +294,8 @@ Unique_Authors_Continent <-
   authors_continent %>% 
   distinct(article_id, Aut_ID, affiliation_id, .keep_all = T) %>% 
   group_by(continent) %>% 
-  summarise(Unique_Authors = n_distinct(Aut_ID))
+  summarise(Unique_Authors = n_distinct(Aut_ID),
+            Unique_countries = n_distinct(affiliation_country))
 
 write.xlsx(Unique_Authors_Continent, paste(directories$dir_authors, "Unique_Authors_Continent.xlsx", sep = "/"), overwrite = T)
 
@@ -518,6 +519,63 @@ ggsave("author_recent_affil.pdf", plot = author_recent_affil, device = "pdf", pa
 ggsave("author_recent_affil.jpeg", plot = author_recent_affil, device = "jpeg", path = directories$dir_authors, units = "in",
        width = 60, height = 20, limitsize = FALSE)
 
+##### SJR Info #####
+
+###### Evolution top 20 countries ######
+
+SJR_info <-
+  M_clean %>% 
+  as_tibble() %>% 
+  select(article_id, PY, SO, SN, AU_CO) %>% 
+  mutate(SN = str_replace_all(SN, "-", ""),
+         PY = as.factor(PY)) %>% 
+  left_join(data %>% 
+              separate_rows(Issn, sep = ",") %>% 
+              mutate(Issn = trimws(Issn, which = "both")), by = c("SN" = "Issn", "PY" = "year")) %>% 
+  arrange(SO, PY)
+
+sjr_processed <- 
+  SJR_info %>% 
+  mutate(PY = as.numeric(as.character(PY)),
+         AU_CO = str_to_title(AU_CO)) %>% 
+  filter(!is.na(SJR.Best.Quartile),
+         PY >= 2001) %>%
+  mutate(Quartile_numeric = as.numeric(str_extract(SJR.Best.Quartile, "\\d"))) %>% 
+  separate_rows(AU_CO, sep = ";") %>% 
+  mutate(AU_CO = trimws(AU_CO, which = "both")) %>% 
+  filter(str_detect(AU_CO, "")) %>% 
+  distinct(article_id, AU_CO, .keep_all = TRUE) %>% 
+  add_count(AU_CO, name = "Number_of_articles_CO") %>% 
+  filter(dense_rank(desc(Number_of_articles_CO)) %in% 1:20)  %>%
+  select(PY, Quartile_numeric, AU_CO) %>%
+  group_by(AU_CO, PY) %>% 
+  summarise(average_quartile = mean(Quartile_numeric),
+            sem = var(Quartile_numeric) / sqrt(n())) %>%
+  ungroup() %>% 
+  mutate(AU_CO = fct_reorder(AU_CO, -average_quartile, last))
+
+evolution_sjr_rank <- 
+  sjr_processed %>% 
+  ggplot(aes(x = PY, y = AU_CO, fill = average_quartile)) +
+  geom_tile(colour = "white") +
+  scale_fill_continuous(high = "#56B1F7", low = "#132B43") +
+  geom_text(aes(label=round(average_quartile,2)), colour = "white", size = 6) +
+  labs(title = "Average publication journal quartile for top 20 countries with more publications (descending by year 2019)",
+       y = "",
+       x = "",
+       fill = "Average Journal Quartile") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), panel.border = element_blank(),
+        axis.text.y = element_text(size = 12), legend.title = element_text(size = 12)) +
+  scale_x_continuous(breaks = 2001:2020)
+
+ggsave("sjr_evolution_top20.pdf", plot = evolution_sjr_rank, device = "pdf", path = directories$dir_sjr, units = "in",
+       width = 60, height = 20, limitsize = FALSE)
+
+ggsave("sjr_evolution_top20.jpeg", plot = evolution_sjr_rank, device = "jpeg", path = directories$dir_sjr, units = "in",
+       width = 60, height = 20, limitsize = FALSE)
+
+write.xlsx(sjr_processed, paste(directories$dir_sjr, "evolution_sjr_top20.xlsx", sep = "/"), overwrite = T)
 
 ##### Countries #####
 
@@ -602,7 +660,8 @@ ALL_authors_country_papers <-
   filter(str_detect(ALL_authors, "")) %>% 
   distinct(article_id, ALL_authors, .keep_all = T) %>% 
   group_by(ALL_authors) %>% 
-  count() %>% 
+  summarise(n = n(),
+             total_citations = sum(TC)) %>% 
   filter(!is.na(ALL_authors)) %>% 
   ungroup() %>% 
   mutate(region = countrycode(ALL_authors, origin = 'country.name', destination = 'region'),
@@ -684,6 +743,39 @@ ALL_authors_country_papers %>%
         axis.text.y = element_text(size = 12), axis.text.x = element_blank(), axis.ticks.x = element_blank(),
         legend.text = element_text(size = 12),
         legend.title = element_text(size = 12))
+
+###### plots the quantifications of all citations accruing from authors in a given country ######
+
+top_30_countries_with_more_citations <-
+  ALL_authors_country_papers %>% 
+  slice_max(total_citations, n = 30) %>%
+  mutate(ALL_authors = str_to_title(ALL_authors),
+         ALL_authors = fct_reorder(ALL_authors, n),
+         ALL_authors = fct_reorder(ALL_authors, total_citations)) %>% 
+  ggplot(aes(x = ALL_authors, y = total_citations, fill = continent)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Total number of citations accruing from authors of a given country (Top 30)",
+       subtitle = "Numbers accrue from authors belonging to a given country",
+       x = "",
+       y = "",
+       fill = "Continent") +
+  geom_text(aes(label = total_citations, hjust = -0.2), size = 5) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.y = element_text(size = 15), axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 14),
+        title = element_text(size = 17))
+
+top_30_countries_with_more_citations
+
+ggsave("total_number_of_citations_top30_country.pdf", plot = top_30_countries_with_more_citations, device = "pdf",
+       path = directories$dir_authors, units = "in",
+       width = 20, height = 10, limitsize = FALSE)
+
+ggsave("total_number_of_citations_top30_country.jpeg", plot = top_30_countries_with_more_citations,
+       device = "jpeg", path = directories$dir_authors, units = "in",
+       width = 20, height = 10, limitsize = FALSE)
 
 ###### Plots top of articles/1M habitants ######
 
@@ -884,6 +976,18 @@ node_stats_per_country <-
 
 cbind(top_20_degree, top_20_betweenness, top_20_closeness) %>%
   write.xlsx(paste(directories$dir_country_net, "Node_centrality_stats_top20.xlsx", sep = "/"), overwrite = T)
+
+###### Checking top 30 collabs ######
+
+top30_country_collabs <-
+  country_network %>% 
+  as_tibble() %>% 
+  separate_rows(AU_CO, sep = ";") %>% 
+  pairwise_count(AU_CO, article_id, sort = T, upper = FALSE) %>% 
+  slice_max(n, n = 30) 
+
+write.xlsx(top30_country_collabs, paste(directories$dir_country_net, "tpo30_country_collabs.xlsx", sep = "/"), overwrite = T)
+
 
 print("Country networks: done")
 
@@ -1105,7 +1209,8 @@ Entire_network_stats <-
              Centrality_Closenness = Centrality_closeness) %>% as_tibble() %>% 
   pivot_longer(everything(), names_to = "Metric", values_to = "Value")
 
-write.xlsx(Entire_network_stats, paste(directories$dir_affil_net, "Affiliation_main_Network_statistics_mindeg_5.xlsx", sep = "/"), overwrite = T)
+write.xlsx(Entire_network_stats, paste(directories$dir_affil_net,
+                                       "Affiliation_main_Network_statistics_mindeg_5.xlsx", sep = "/"), overwrite = T)
 
 # Degree
 
@@ -1115,7 +1220,7 @@ z_raw_degree <- data.frame(affilaition = names(z_raw_degree), degree = as.numeri
 z_normalized_degree <- degree(main_network_affil[[1]], mode = "total", normalized = TRUE)
 z_normalized_degree <- data.frame(affilaition = names(z_normalized_degree), degree = as.numeric(z_normalized_degree)) %>% as_tibble();z_normalized_degree
 
-top_20_degree <- z_normalized_degree %>% slice_max(degree, n = 20)
+top_20_degree <- z_normalized_degree %>% slice_max(degree, n = 20, with_ties = FALSE)
 
 # Betweenness
 
@@ -1126,7 +1231,7 @@ z_normalized_betweenness <- betweenness(main_network_affil[[1]], directed = F, n
 z_normalized_betweenness <- data.frame(affilaition = names(z_normalized_betweenness), degree = as.numeric(z_normalized_betweenness)) %>% 
   as_tibble() %>% rename(betweenness = "degree");z_normalized_betweenness
 
-top_20_betweenness <- z_normalized_betweenness %>% slice_max(betweenness, n = 20)
+top_20_betweenness <- z_normalized_betweenness %>% slice_max(betweenness, n = 20, with_ties = FALSE)
 
 
 # Closeness
@@ -1138,7 +1243,7 @@ z_normalized_closeness <- closeness(main_network_affil[[1]])
 z_normalized_closeness <- data.frame(affilaition = names(z_normalized_closeness), degree = as.numeric(z_normalized_closeness)) %>% 
   as_tibble() %>% rename(closeness = "degree");z_normalized_closeness
 
-top_20_closeness <- z_normalized_closeness %>% slice_max(closeness, n = 20)
+top_20_closeness <- z_normalized_closeness %>% slice_max(closeness, n = 20, with_ties = FALSE)
 
 node_stats_per_affil <- 
   full_join(z_normalized_degree, z_normalized_betweenness, by = "affilaition") %>% 
@@ -1150,7 +1255,8 @@ node_stats_per_affil <-
          affilaition = str_to_title(affilaition))
 
 cbind(top_20_degree, top_20_betweenness, top_20_closeness) %>%
-  write.xlsx(paste(directories$dir_affil_net, "Node_centrality_stats_affiliations_top20_mindeg_5.xlsx", sep = "/"), overwrite = T)
+  write.xlsx(paste(directories$dir_affil_net,
+                   "Node_centrality_stats_affiliations_top20_mindeg_5.xlsx", sep = "/"), overwrite = T)
 
 print("Affiliation network: done")
 
@@ -1218,9 +1324,113 @@ most_cited_articles_info_noKW <-
   mutate(TI = str_to_title(TI),
          AU1_Country = str_to_title(AU1_Country))
 
-write.xlsx(most_cited_articles_info_noKW, paste(directories$dir_most_cited_papers, "Most cited papers_info_noKW.xlsx", sep = "/"), overwrite = T)
+write.xlsx(most_cited_articles_info_noKW, paste(directories$dir_most_cited_papers,
+                                                "Most cited papers_info_noKW.xlsx", sep = "/"), overwrite = T)
 
 print("Most cited Papers: done")
+
+
+##### Subject Categories #####
+
+# Still need to find a way to efficiently show different categories.
+
+Aggregated_categories <- 
+  M_clean %>% 
+  as_tibble() %>% 
+  select(article_id, SO, TI, SC, PY, TC, AU1_CO, AU_CO, AB, ID, DE) %>% 
+  mutate(total_papers = length(article_id)) %>% 
+  separate_rows(SC, sep = ";") %>% 
+  mutate(SC = trimws(SC, which = "both")) %>% 
+  left_join(Aggreagted_SC, by = "SC") %>% 
+  mutate(Category_group = str_to_upper(Category_group)) %>% 
+  filter(!is.na(Category_group))
+
+aggregated_SC_ts <- 
+  Aggregated_categories %>% 
+  distinct(article_id, Category_group,.keep_all = T) %>% 
+  #filter(PY >= 2014) %>% 
+  group_by(PY) %>% 
+  count(Category_group, sort = T) %>% 
+  ungroup() %>% 
+  complete(PY, Category_group, fill = list(n = 0)) %>% 
+  mutate(Category_group = fct_reorder(Category_group, -n, sum)) %>% 
+  ggplot(aes(x = PY, y = n, group = Category_group, color = Category_group)) +
+  geom_line(lwd = 1) + 
+  facet_wrap(~ Category_group, scales = "free_y") +
+  scale_y_continuous(breaks= pretty_breaks()) +
+  theme(panel.grid.major = element_blank(), strip.text = element_text(size = 15),
+        axis.text.y = element_text(size = 14), axis.text.x = element_text(size = 14),
+        legend.title = element_text(size = 15), legend.text = element_text(size = 14),
+        legend.position = "none", title = element_text(size = 17)) +
+  labs(title = "Evolution of disciplinary areas per year",
+       subtitle = "Absolute number of articles",
+       x = "",
+       y = "")
+
+ggsave("aggregated_SC_categories_ts.pdf", plot = aggregated_SC_ts, device = "pdf", path = directories$dir_aggregated_SC,
+       units = "in",
+       width = 20, height = 10)
+
+ggsave("aggregated_SC_categories_ts.jpeg", plot = aggregated_SC_ts, device = "pdf", path = directories$dir_aggregated_SC,
+       units = "in",
+       width = 20, height = 10)
+
+
+Aggregated_categories %>% 
+  mutate(Citations_year = TC / (2021 - PY)) %>% 
+  group_by(Category_group) %>% 
+  summarise(Articles = n(),
+            Percentage = n() / total_papers,
+            Average_citations_year = mean(Citations_year)) %>% distinct(Category_group, .keep_all = T)
+
+summary_table_categories <- 
+  
+  left_join(
+    Aggregated_categories %>%
+      distinct(article_id, Category_group,.keep_all = T) %>% 
+      #filter(PY >= 2014) %>% 
+      mutate(Citations_year = TC / (2021 - PY)) %>% 
+      group_by(Category_group) %>% 
+      summarise(Articles = n(),
+                Percentage = n() / unique(total_papers),
+                Average_citation = mean(TC),
+                Average_citation_year = mean(Citations_year),
+                total_citations = sum(TC)
+      ),
+    Aggregated_categories %>% 
+      distinct(article_id, Category_group,.keep_all = T) %>% 
+      #filter(PY >= 2014) %>%
+      group_by(PY) %>% 
+      count(Category_group) %>%
+      arrange(Category_group, PY) %>% 
+      group_by(Category_group) %>% 
+      mutate(n_less_1 = lag(n, 1),
+             growth = (n - n_less_1) / n_less_1) %>% 
+      summarise(Average_growth_YoY = mean(growth, na.rm = T)),
+    
+    by = "Category_group") %>% 
+  arrange(desc(Articles))
+
+write.xlsx(summary_table_categories, paste(directories$dir_aggregated_SC,
+                                           "Indicators_aggregated_SC_categories.xlsx", sep = "/"), overwrite = T)
+
+
+##### Sources ######
+
+M_clean %>% 
+  as_tibble() %>% 
+  select(PY, SO) %>% 
+  count(SO, sort = T) %>% 
+  slice_max(n, n = 20) %>% 
+  mutate(SO = fct_reorder(SO, n)) %>% 
+  ggplot(aes(x  = SO, y = n)) +
+  geom_col() +
+  coord_flip() +
+  geom_text(aes(label = n, hjust = 0)) +
+  theme(panel.grid.major = element_blank()) +
+  labs(title = "Top 20 journals: number of articles",
+       y = "",
+       x = "")
 
 ##### Keywords #####
 

@@ -65,11 +65,31 @@ if (data_file_check$has_API_data) {
     select(article_id, DI) %>% 
     filter(!is.na(DI))
   
-  API_info <- get_api_info(DI_not_na)
+  DI_na <- 
+    M_clean %>% 
+    as_tibble() %>% 
+    select(article_id, DI, TI) %>% 
+    filter(is.na(DI)) %>% 
+    mutate(TI_search = str_c("{",TI, "}"))
+  
+  DI_na_scopus_search <- search_for_missing_dois_scopus(DI_na)
+  
+  DI_not_an_enrich <- bind_rows(DI_not_na, DI_na_scopus_search$articles_with_doi)
+  
+  API_info <- get_api_info(DI_not_an_enrich)
   
   save(API_info, file = paste(directories$dir_input_data, "API_info.RData", sep = "/"))
   
 }
+
+###### Aggregated SC categories ######
+
+Aggreagted_SC <- 
+  read.xlsx(paste(directories$dir_input_data, "Aggregated Category Groups_SC.xlsx", sep = "/"),
+                           sheet = "Final") %>% 
+  as_tibble() %>% 
+  mutate(SC = trimws(SC, "both"),
+         SC = str_squish(SC))
 
 ##### Pre - Process #####
 

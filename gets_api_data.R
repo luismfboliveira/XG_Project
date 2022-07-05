@@ -42,12 +42,17 @@ if (data_file_check$has_initial_dataset){
   
 } 
 
-DI_not_na <- 
+DI_na <- 
   M_clean %>% 
   as_tibble() %>% 
-  select(article_id, DI) %>% 
-  filter(!is.na(DI))
+  select(article_id, DI, TI) %>% 
+  filter(is.na(DI)) %>% 
+  mutate(TI_search = str_c("{",TI, "}"))
 
-API_info <- get_api_info(DI_not_na)
+DI_na_scopus_search <- search_for_missing_dois_scopus(DI_na)
+
+DI_not_na_enrich <- bind_rows(DI_not_na, DI_na_scopus_search$articles_with_doi)
+
+API_info <- get_api_info(DI_not_na_enrich)
 
 save(API_info, file = paste(directories$dir_input_data, "API_info.RData", sep = "/"))

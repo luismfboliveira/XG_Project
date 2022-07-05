@@ -37,6 +37,17 @@ creates_output_directories <- function() {
   
   ###### General Analysis ######
   
+  if (dir.exists(paste(dir_output_data, "API_data_enrich", sep = "/"))) {
+    
+    print("Directory for API_data_enrich already created")
+    
+  } else {
+    
+    dir.create(paste(dir_output_data, "API_data_enrich", sep = "/"))
+    print("Directory for API_data_enrich created")
+    
+  }
+  
   if (dir.exists(paste(dir_output_data, "general_analysis", sep = "/"))) {
     
     print("Directory for general_analysis already created")
@@ -94,6 +105,36 @@ creates_output_directories <- function() {
   }
   
   dir_keywords <- paste(wd, "output_data", "keywords",  sep = "/")
+  
+  ###### SJR data ######
+  
+  if (dir.exists(paste(dir_output_data, "SJR_data", sep = "/"))) {
+    
+    print("Directory for SJR data already created")
+    
+  } else {
+    
+    dir.create(paste(dir_output_data, "SJR_data", sep = "/"))
+    print("Directory for SJR_data created")
+    
+  }
+  
+  dir_sjr_data <- paste(wd, "output_data", "SJR_data",  sep = "/")
+  
+  ###### Aggregated SC categories data ######
+  
+  if (dir.exists(paste(dir_output_data, "Aggregated SC categories", sep = "/"))) {
+    
+    print("Directory for Aggregated SC categories already created")
+    
+  } else {
+    
+    dir.create(paste(dir_output_data, "Aggregated SC categories", sep = "/"))
+    print("Directory for Aggregated SC categories created")
+    
+  }
+  
+  dir_aggregated_SC <- paste(wd, "output_data", "Aggregated SC categories",  sep = "/")
   
   ###### Affiliations ######
   
@@ -159,7 +200,8 @@ creates_output_directories <- function() {
  return(list(dir_input_data = dir_input_data, dir_output_data = dir_output_data,
              dir_affil_net = dir_affil_net, dir_keywords = dir_keywords, dir_affiliations = dir_affiliations,
              dir_authors = dir_authors, dir_most_cited_papers = dir_most_cited_papers, dir_country_net = dir_country_net,
-             dir_general_analysis = dir_general_analysis, dir_herfindahal = dir_herfindahal))
+             dir_general_analysis = dir_general_analysis, dir_herfindahal = dir_herfindahal, dir_sjr = dir_sjr_data,
+             dir_aggregated_SC = dir_aggregated_SC))
 }
 
 
@@ -191,11 +233,15 @@ checks_input_data_files <- function() {
   has_initial_dataset <- "initial_dataset.xlsx" %in% files_input_data
   has_API_data <- "API_info.RData" %in% files_input_data
   has_previous_analysis <- "Data_analysis.RData" %in% files_input_data
+  has_sjr_data <- "Journal_metrics_info.RData" %in% files_input_data
+  has_subject_category_aggregation <- "Aggregated Category Groups_SC.xlsx" %in% files_input_data
   has_jar_file <- "VOSviewer.jar" %in% files_input_data
   
   print(glue("Files present in input_data folder:\nInitial dataset: {has_initial_dataset}\n",
              "API data: {has_API_data}\n",
              "Previous analysis: {has_previous_analysis}\n",
+             "SJR data: {has_sjr_data}\n",
+             "Aggregated SC categories: {has_subject_category_aggregation}\n",
              "Jar file for VOSviewer: {has_jar_file}\n\n"))
   
   if (!has_initial_dataset) {
@@ -231,6 +277,70 @@ checks_input_data_files <- function() {
   
   return(list(has_initial_dataset = has_initial_dataset, has_API_data = has_API_data,
               has_previous_analysis = has_previous_analysis))
+  
+}
+
+search_for_missing_dois_scopus <- function(tbl){
+  
+  articles_not_found <- 0
+  articles_doi_found <- 0
+  articles_doi_missing <- 0
+  articles_more_than_one_found <- 0
+  n_rows <- nrow(tbl)
+  
+  for (i in 1:n_rows){
+    
+    article_to_search <- tbl[["TI_search"]][[i]]
+    print(article_to_search)
+    api_response <- generic_elsevier_api(type = "search", api_key = api_key, query = as.character(glue('title({article_to_search})')), search_type = "scopus")
+    
+    found_articles <- as.integer(api_response$content$`search-results`$`opensearch:totalResults`)
+    
+    NULL_doi <- is.null(api_response$content$`search-results`$entry[[1]]$`prism:doi`)
+    
+    if (found_articles == 0){
+      
+      tbl[["DI"]][[i]] <- "Article not found"
+      articles_not_found <- articles_not_found + 1
+      
+    } else if (found_articles == 1 & !NULL_doi) {
+      
+      tbl[["DI"]][[i]] <- api_response$content$`search-results`$entry[[1]]$`prism:doi`
+      articles_doi_found <- articles_doi_found + 1
+      
+    } else if (found_articles == 1 & NULL_doi) {
+      
+      tbl[["DI"]][[i]] <- "No DOI"
+      articles_doi_missing <- articles_doi_missing + 1
+      
+    } else if (found_articles > 1) {
+      
+      tbl[["DI"]][[i]] <- "Several articles found"
+      articles_more_than_one_found <- articles_more_than_one_found + 1
+      
+    }
+    
+  }
+  
+  print("Tentative: Enriching missing DOI articles from WoS with SCOPUS data...\n")
+  
+  print(glue("Number of articles missing from SCOPUS: {articles_not_found}/{n_rows}"))
+  print(glue("Number of articles DOI found: {articles_doi_found}/{n_rows}"))
+  print(glue("Number of articles with DOI missing: {articles_doi_missing}/{n_rows}"))
+  print(glue("Number of articles with multiple results: {articles_more_than_one_found}/{n_rows}"))
+  
+  articles_with_doi <- 
+    tbl %>% 
+    filter(DI != "Several articles found" & DI != "No DOI" & DI != "Article not found") %>% 
+    select(article_id, DI) %>% 
+    arrange(as.numeric(article_id))
+  
+  articles_no_doi <- 
+    tbl %>% 
+    filter(DI == "Several articles found" | DI == "No DOI" | DI == "Article not found") %>% 
+    arrange(as.numeric(article_id))
+  
+  return(list(articles_with_doi = articles_with_doi, articles_no_doi = articles_no_doi))
   
 }
 
