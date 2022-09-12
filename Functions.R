@@ -412,7 +412,50 @@ get_api_info <- function(tbl){
   
 }
 
-
+process_sjr_raw_data <- function() {
+  
+  SJR_info_dir <- paste(directories$dir_input_data, "SJR info", sep = "/")
+  if (file.exists(paste(directories$dir_input_data, "Journal_metrics_info.RData", sep = "/"))) {
+    
+    print("Processed data for SJR found!")
+    
+  } else {
+    
+    print("Processed data for SRJ not found! Looking for raw data directory...")
+    if (file.exists(SJR_info_dir)) {
+      
+      print("Folder with raw SJR info found. Processing...")
+      files_to_process <- list.files(SJR_info_dir)
+      sjr_holder <- vector(mode = "list", length = length(files_to_process))
+      for (i in 1:length(files_to_process)){
+        
+        file <- files_to_process[i]
+        year <- str_extract(file, pattern = "[0-9]{4}")
+        file_data <- read.csv(paste(SJR_info_dir, file, sep = "/"), sep = ";") %>% as_tibble()
+        file_data_processed <-
+          file_data %>% 
+          rename("total_docs_curr_year" = matches("[0-9]{4}")) %>% 
+          mutate(across(.cols = everything(), as.character),
+                 year = as.factor(year))
+        
+        sjr_holder[[year]] <- file_data_processed
+        
+      }
+      
+      Journal_metrics_info <- bind_rows(sjr_holder)
+      save(Journal_metrics_info, file = paste(directories$dir_input_data, "Journal_metrics_info.RData", sep = "/"))
+      
+    } else {
+      
+      print("Folder with SJR raw data not found. Analysis will not be done.")
+      
+    }
+    
+    print("Processing of SJR data is done!")
+    
+  }
+  
+}
 
 
 
