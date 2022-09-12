@@ -549,7 +549,7 @@ sjr_processed <-
   filter(dense_rank(desc(Number_of_articles_CO)) %in% 1:20)  %>%
   select(PY, Quartile_numeric, AU_CO) %>%
   group_by(AU_CO, PY) %>% 
-  summarise(average_quartile = mean(Quartile_numeric),
+  summarise(average_quartile = mean(Quartile_numeric, na.rm  =T),
             sem = var(Quartile_numeric) / sqrt(n())) %>%
   ungroup() %>% 
   mutate(AU_CO = fct_reorder(AU_CO, -average_quartile, last))
@@ -559,14 +559,15 @@ evolution_sjr_rank <-
   ggplot(aes(x = PY, y = AU_CO, fill = average_quartile)) +
   geom_tile(colour = "white") +
   scale_fill_continuous(high = "#56B1F7", low = "#132B43") +
-  geom_text(aes(label=round(average_quartile,2)), colour = "white", size = 6) +
+  geom_text(aes(label=round(average_quartile,2)), colour = "white", size = 12) +
   labs(title = "Average publication journal quartile for top 20 countries with more publications (descending by year 2019)",
        y = "",
        x = "",
        fill = "Average Journal Quartile") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(), panel.border = element_blank(),
-        axis.text.y = element_text(size = 12), legend.title = element_text(size = 12)) +
+        axis.text.y = element_text(size = 32), legend.title = element_text(size = 15),
+        axis.text.x = element_text(size = 32), plot.title = element_text(size = 40)) +
   scale_x_continuous(breaks = 2001:2020)
 
 ggsave("sjr_evolution_top20.pdf", plot = evolution_sjr_rank, device = "pdf", path = directories$dir_sjr, units = "in",
