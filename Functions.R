@@ -196,12 +196,43 @@ creates_output_directories <- function() {
   
   dir_most_cited_papers <- paste(wd, "output_data", "most_cited_papers", sep = "/")
   
+  ###### Sources ######
+  
+  if (dir.exists(paste(dir_output_data, "sources", sep = "/"))) {
+    
+    print("Directory for sources already created")
+    
+  } else {
+    
+    dir.create(paste(dir_output_data, "sources", sep = "/"))
+    print(glue("Directory for sources created"))
+    
+  }
+  
+  dir_sources <- paste(wd, "output_data", "sources", sep = "/")
+  
+  ###### Most cited citing most cited ######
+  
+  if (dir.exists(paste(dir_output_data, "most_cited_citing_most_cited", sep = "/"))) {
+    
+    print("Directory for most_cited_citing_most_cited already created")
+    
+  } else {
+    
+    dir.create(paste(dir_output_data, "most_cited_citing_most_cited", sep = "/"))
+    print(glue("Directory for most_cited_citing_most_cited created"))
+    
+  }
+  
+  dir_most_cited_citing_most_cited <- paste(wd, "output_data", "most_cited_citing_most_cited", sep = "/")
+  
   
  return(list(dir_input_data = dir_input_data, dir_output_data = dir_output_data,
              dir_affil_net = dir_affil_net, dir_keywords = dir_keywords, dir_affiliations = dir_affiliations,
              dir_authors = dir_authors, dir_most_cited_papers = dir_most_cited_papers, dir_country_net = dir_country_net,
              dir_general_analysis = dir_general_analysis, dir_herfindahal = dir_herfindahal, dir_sjr = dir_sjr_data,
-             dir_aggregated_SC = dir_aggregated_SC))
+             dir_aggregated_SC = dir_aggregated_SC, dir_sources = dir_sources,
+             dir_most_cited_citing_most_cited = dir_most_cited_citing_most_cited))
 }
 
 
@@ -236,13 +267,15 @@ checks_input_data_files <- function() {
   has_sjr_data <- "Journal_metrics_info.RData" %in% files_input_data
   has_subject_category_aggregation <- "Aggregated Category Groups_SC.xlsx" %in% files_input_data
   has_jar_file <- "VOSviewer.jar" %in% files_input_data
+  has_most_cited_citing_most_cited_data <- "Citing_most_cited.RData" %in% files_input_data
   
   print(glue("Files present in input_data folder:\nInitial dataset: {has_initial_dataset}\n",
              "API data: {has_API_data}\n",
              "Previous analysis: {has_previous_analysis}\n",
              "SJR data: {has_sjr_data}\n",
              "Aggregated SC categories: {has_subject_category_aggregation}\n",
-             "Jar file for VOSviewer: {has_jar_file}\n\n"))
+             "Jar file for VOSviewer: {has_jar_file}\n",
+             "Most cited citing most cited data: {has_most_cited_citing_most_cited_data}\n"))
   
   if (!has_initial_dataset) {
     
@@ -458,4 +491,67 @@ process_sjr_raw_data <- function() {
 }
 
 
+process_most_cited_citing_most_cited <- function() {
+  
+  dir_cited_most_citing <- paste(directories$dir_input_data, "Most cited citing most cited", sep = "/")
+  if (file.exists(paste(directories$dir_input_data, "Citing_most_cited.RData", sep = "/"))) {
+    
+    print("Most cited citing most cited data found!")
+    
+  } 
+  
+  else {
+    
+    print("Most cited citing most cited data not found! Looking for raw data directory...")
+    
+    if (dir.exists(dir_cited_most_citing)) {
+      print("Raw data for Most cited citing most cited found. Processing data...")
+  
+      folders <- list.files(dir_cited_most_citing)
+      
+      all_papers <- vector(mode = "list", length = length(folders))
+      names(all_papers) <- folders
+      
+      current_wd <- getwd()
+      
+      for (i in 1:length(folders)){
+        original_paper <- folders[[i]]
+        print(original_paper)
+        dir_paper_cited <- paste(dir_cited_most_citing, original_paper, sep = "/")
+        input_files <- list.files(dir_paper_cited, pattern = ".txt")
+        print(input_files)
+        setwd(dir_paper_cited)
+        data <- convert2df(file = input_files, format = "plaintext", dbsource = "wos")
+        data_compiled <- 
+          data %>% 
+          as_tibble() %>% 
+          separate(EA, c("Month", "Year"), sep = "-", remove = F) %>% # separate EA in month and year, by "-"
+          mutate(Year = as.numeric(Year) + 2000, # Convert year, PY to numeric and coalesce PY with year.
+                 PY = as.numeric(PY),
+                 PY = coalesce(PY, Year)) %>% 
+          metaTagExtraction(Field = "AU1_CO") %>% 
+          metaTagExtraction(Field = "AU_CO", sep = ";") %>% 
+          metaTagExtraction(Field = "AU_UN", sep = ";", aff.disamb = T ) %>% 
+          rowid_to_column(var = "article_id") %>% 
+          mutate(Original_paper = original_paper)
+        all_papers[[i]] <- data_compiled
+      }
+      
+      citing_most_cited <- bind_rows(all_papers)
+      
+      setwd(current_wd)
+      
+      save(citing_most_cited, file = paste(directories$dir_input_data, "Citing_most_cited.RData", sep = "/"))
+    
+    }
+    
+    else {
+      
+      print("Raw data for Most cited citing most cited not found. Analysis will not be possible.")
+      
+    }
+
+  }
+  
+}
 
