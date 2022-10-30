@@ -98,6 +98,13 @@ Aggreagted_SC <-
   mutate(SC = trimws(SC, "both"),
          SC = str_squish(SC))
 
+###### Most cited citing most cited ######
+
+
+process_most_cited_citing_most_cited()
+load(paste(directories$dir_input_data, "Citing_most_cited.RData", sep = "/")) # Object for citing most cited comp.
+
+
 ##### Pre - Process #####
 
 ###### Affiliations ######
