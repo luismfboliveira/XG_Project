@@ -578,6 +578,44 @@ ggsave("sjr_evolution_top20.jpeg", plot = evolution_sjr_rank, device = "jpeg", p
 
 write.xlsx(sjr_processed, paste(directories$dir_sjr, "evolution_sjr_top20.xlsx", sep = "/"), overwrite = T)
 
+###### Temporal evolution of average SJR quartile ######
+
+average_sjr_quartile <- 
+  SJR_info %>% 
+  mutate(PY = as.numeric(as.character(PY))) %>% 
+  filter(PY >= 2014) %>% 
+  filter(!is.na(SJR.Best.Quartile)) %>%
+  mutate(Quartile_numeric = as.numeric(str_extract(SJR.Best.Quartile, "\\d"))) %>% 
+  select(PY, Quartile_numeric) %>%
+  group_by(PY) %>% 
+  summarise(average_quartile = mean(Quartile_numeric, na.rm = T),
+            sem = var(Quartile_numeric) / sqrt(n()))
+
+average_sjr_quartile_chart <-
+  average_sjr_quartile %>% 
+  ggplot(aes(x = PY, y = average_quartile, group = 1)) +
+  geom_ribbon(aes(ymin = average_quartile - sem, ymax = average_quartile + sem), fill = "grey70") +
+  geom_line() +
+  geom_point() + 
+  scale_y_continuous(trans = "reverse") +
+  theme(panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.text.y = element_text(size = 22),
+        axis.text.x = element_text(size = 22)) + 
+  expand_limits(y = 1) +
+  labs(title = NULL,
+       subtitle = NULL,
+       x = "",
+       y = "")
+
+ggsave("average_sjr_quartile_evolution.pdf", plot = average_sjr_quartile_chart, device = "pdf", path = directories$dir_sjr, units = "in",
+       width = 60, height = 20, limitsize = FALSE)
+
+ggsave("average_sjr_quartile_evolution.jpeg", plot = average_sjr_quartile_chart, device = "jpeg", path = directories$dir_sjr, units = "in",
+       width = 60, height = 20, limitsize = FALSE)
+
+write.xlsx(average_sjr_quartile, paste(directories$dir_sjr, "average_sjr_quartile_evolution.xlsx", sep = "/"), overwrite = T)
+
 ##### Countries #####
 
 ###### First author countries ######
@@ -1415,15 +1453,20 @@ summary_table_categories <-
 write.xlsx(summary_table_categories, paste(directories$dir_aggregated_SC,
                                            "Indicators_aggregated_SC_categories.xlsx", sep = "/"), overwrite = T)
 
+print("Subject categories: done")
 
 ##### Sources ######
 
-M_clean %>% 
+top_20_journals <-
+  M_clean %>% 
   as_tibble() %>% 
   select(PY, SO) %>% 
   count(SO, sort = T) %>% 
   slice_max(n, n = 20) %>% 
-  mutate(SO = fct_reorder(SO, n)) %>% 
+  mutate(SO = fct_reorder(SO, n))
+
+top_20_journals_chart <-
+  top_20_journals %>% 
   ggplot(aes(x  = SO, y = n)) +
   geom_col() +
   coord_flip() +
@@ -1432,6 +1475,125 @@ M_clean %>%
   labs(title = "Top 20 journals: number of articles",
        y = "",
        x = "")
+
+write.xlsx(top_20_journals, paste(directories$dir_sources,
+                                           "top_20_journals.xlsx", sep = "/"), overwrite = T)
+
+ggsave("top_20_journals.jpeg", plot = top_20_journals_chart, device = "pdf", path = directories$dir_sources,
+       units = "in",
+       width = 20, height = 10)
+
+ggsave("top_20_journals.pdf", plot = top_20_journals_chart, device = "pdf", path = directories$dir_sources,
+       units = "in",
+       width = 20, height = 10)
+
+print("Sources: done")
+
+##### Most cited papers, citing most cited papers #####
+
+# Here we want to retrieve information about papers citing the most cited papers in our collection (say top 50).
+
+top100_cited_citing_most_cited <- 
+  citing_most_cited %>% 
+  mutate(Is_in_collection = case_when(DI %in% M_clean$DI ~ 1,
+                                      TRUE ~ 0)) %>% 
+  group_by(Original_paper) %>% 
+  add_count(Original_paper, name = "Citations_Original_paper") %>% 
+  arrange(desc(TC)) %>% 
+  slice_max(TC, n = 100) %>% 
+  select(article_id, AU, TI, DE, ID, PY, AU_CO, AU_UN, SC, Is_in_collection) %>% 
+  separate_rows(AU_CO, sep = ";") %>% 
+  distinct(article_id, AU_CO, .keep_all = T) %>% 
+  group_by(Original_paper, article_id, AU, TI, DE, ID, PY, AU_UN, SC, Is_in_collection) %>% 
+  summarise(AU_CO = paste(AU_CO, collapse = "; ")) %>% 
+  ungroup() %>% 
+  separate_rows(AU_UN, sep = ";") %>% 
+  distinct(article_id, AU_UN, .keep_all = T) %>% 
+  group_by(Original_paper, article_id, AU, TI, DE, ID, PY, AU_CO, SC, Is_in_collection) %>% 
+  summarise(AU_UN = paste(AU_UN, collapse = "; ")) %>% ungroup()
+
+# Some numerical information like if the papers citing are in our collection and the median year of publication.
+
+numerical_info_citing_most_cited <- 
+  top100_cited_citing_most_cited %>% 
+  group_by(Original_paper) %>% 
+  summarise(Present_in_collection = mean(Is_in_collection),
+            Median_year_citation = median(PY, na.rm = T))
+
+# Find the most common keywords used by these papers. Top 5 most common.
+
+keywords_info_citing_most_cited <-
+  top100_cited_citing_most_cited %>% 
+  unite("keywords", c(ID, DE), na.rm = T, remove = F) %>% 
+  group_by(Original_paper) %>% 
+  separate_rows(keywords, sep = ";") %>% 
+  mutate(keywords = trimws(keywords, which = "both")) %>% 
+  filter(str_detect(keywords, "",),
+         !str_detect(keywords, "5G")) %>% 
+  add_count(keywords, name = "keyword_per_original_paper") %>%
+  distinct(Original_paper, keywords, .keep_all = T) %>% 
+  slice_max(keyword_per_original_paper, n = 5, with_ties = F) %>% 
+  mutate(keyword_per_original_paper = paste("(", keyword_per_original_paper, ")", sep = ""),
+         Common_keywords = paste(keywords, keyword_per_original_paper, sep = " ")) %>% 
+  summarise(Common_keywords = paste(keywords, keyword_per_original_paper, collapse = "; "))
+
+# Find the most common countries contributing for these papers. Top 5 most common.
+
+Country_info_citing_most_cited <-
+  top100_cited_citing_most_cited %>% 
+  group_by(Original_paper) %>% 
+  separate_rows(AU_CO, sep = ";") %>% 
+  mutate(AU_CO = trimws(AU_CO, which = "both")) %>% 
+  filter(str_detect(AU_CO, "",)) %>% 
+  distinct(article_id, AU_CO, .keep_all = T) %>% 
+  add_count(AU_CO, name = "Countries_per_original_paper") %>%
+  distinct(Original_paper, AU_CO, .keep_all = T) %>% 
+  slice_max(Countries_per_original_paper, n = 5, with_ties = F) %>% 
+  mutate(Countries_per_original_paper = paste("(", Countries_per_original_paper, ")", sep = ""),
+         Common_countries = paste(AU_CO, Countries_per_original_paper, sep = " ")) %>% 
+  summarise(Common_countries = paste(AU_CO, Countries_per_original_paper, collapse = "; "))
+
+# Find the most common affiliations contributing for these papers. Top 5 most common.
+
+Affil_info_citing_most_cited <-
+  top100_cited_citing_most_cited %>% 
+  group_by(Original_paper) %>% 
+  separate_rows(AU_UN, sep = ";") %>% 
+  mutate(AU_UN = trimws(AU_UN, which = "both")) %>% 
+  filter(str_detect(AU_UN, "",)) %>% 
+  distinct(article_id, AU_UN, .keep_all = T) %>% 
+  add_count(AU_UN, name = "Affiliation_per_original_paper") %>%
+  distinct(Original_paper, AU_UN, .keep_all = T) %>% 
+  slice_max(Affiliation_per_original_paper, n = 5, with_ties = F) %>% 
+  mutate(Affiliation_per_original_paper = paste("(", Affiliation_per_original_paper, ")", sep = ""),
+         Common_affiliation = paste(AU_UN, Affiliation_per_original_paper, sep = " ")) %>% 
+  summarise(Common_affiliation = paste(AU_UN, Affiliation_per_original_paper, collapse = "; "))
+
+# Find the most common categories of journals in which these papers are published. Top 5 most common.
+
+Category_info_citing_most_cited <-
+  top100_cited_citing_most_cited %>% 
+  group_by(Original_paper) %>% 
+  separate_rows(SC, sep = ";") %>% 
+  mutate(SC = trimws(SC, which = "both")) %>% 
+  filter(str_detect(SC, "",)) %>% 
+  distinct(article_id, SC, .keep_all = T) %>% 
+  add_count(SC, name = "Category_per_original_paper") %>%
+  distinct(Original_paper, SC, .keep_all = T) %>% 
+  slice_max(Category_per_original_paper, n = 5, with_ties = F) %>% 
+  mutate(Category_per_original_paper = paste("(", Category_per_original_paper, ")", sep = ""),
+         Common_category = paste(SC, Category_per_original_paper, sep = " ")) %>% 
+  summarise(Common_category = paste(SC, Category_per_original_paper, collapse = "; "))
+
+# Joins everything and exports.
+
+inner_join(numerical_info_citing_most_cited, keywords_info_citing_most_cited, by = "Original_paper") %>% 
+  inner_join(Country_info_citing_most_cited, by = "Original_paper") %>% 
+  inner_join(Affil_info_citing_most_cited, by = "Original_paper") %>% 
+  inner_join(Category_info_citing_most_cited, by = "Original_paper") %>% 
+  write.xlsx(paste(directories$dir_most_cited_citing_most_cited, "Most_cited_citing_key_features.xlsx", sep = "/"))
+
+print("Most cited citing most cited: done")
 
 ##### Keywords #####
 
