@@ -7,7 +7,7 @@ papers_countries_per_year <-
   M_clean %>%
   separate_rows(AU_CO, sep = ";") %>%
   mutate(AU_CO = trimws(AU_CO, which = "both")) %>%
-  filter(str_detect(AU_CO, "")) %>%
+  filter(str_detect(AU_CO, "\\b")) %>%
   group_by(PY) %>%
   summarise(papers_year = n_distinct(article_id),
             countries_year = n_distinct(AU_CO, na.rm = T))
@@ -77,7 +77,7 @@ countries_clean <-
   unite("Unique_countries", c(AU1_CO, AU_CO), sep = ";", na.rm = T, remove = F) %>% 
   separate_rows(Unique_countries, sep = ";") %>% 
   mutate(Unique_countries = trimws(Unique_countries, which = "both")) %>% 
-  filter(str_detect(Unique_countries, "")) %>% 
+  filter(str_detect(Unique_countries, "\\b")) %>% 
   distinct(article_id, Unique_countries, .keep_all = T) %>% 
   group_by(article_id, PY, AU, AU1_CO, AU_CO) %>% 
   summarise(Unique_countries = paste(Unique_countries, collapse = ";")) %>% 
@@ -94,7 +94,7 @@ authors_journals_clean <-
          SN = str_replace_all(SN, "-", "")) %>%
   #  EI = str_replace_all(EI, "-", "")) %>% 
   # mutate(SN = coalesce(SN, EI)) %>%
-  filter(str_detect(AU, "")) %>% 
+  filter(str_detect(AU, "\\b")) %>% 
   group_by(article_id, PY, SN) %>% 
   summarise(AU = paste(AU, collapse = ";")) %>% 
   ungroup()
@@ -543,7 +543,7 @@ sjr_processed <-
   mutate(Quartile_numeric = as.numeric(str_extract(SJR.Best.Quartile, "\\d"))) %>% 
   separate_rows(AU_CO, sep = ";") %>% 
   mutate(AU_CO = trimws(AU_CO, which = "both")) %>% 
-  filter(str_detect(AU_CO, "")) %>% 
+  filter(str_detect(AU_CO, "\\b")) %>% 
   distinct(article_id, AU_CO, .keep_all = TRUE) %>% 
   add_count(AU_CO, name = "Number_of_articles_CO") %>% 
   filter(dense_rank(desc(Number_of_articles_CO)) %in% 1:20)  %>%
@@ -583,25 +583,28 @@ write.xlsx(sjr_processed, paste(directories$dir_sjr, "evolution_sjr_top20.xlsx",
 average_sjr_quartile <- 
   SJR_info %>% 
   mutate(PY = as.numeric(as.character(PY))) %>% 
-  filter(PY >= 2014) %>% 
+  filter(PY >= 2000) %>% 
   filter(!is.na(SJR.Best.Quartile)) %>%
   mutate(Quartile_numeric = as.numeric(str_extract(SJR.Best.Quartile, "\\d"))) %>% 
   select(PY, Quartile_numeric) %>%
   group_by(PY) %>% 
   summarise(average_quartile = mean(Quartile_numeric, na.rm = T),
-            sem = var(Quartile_numeric) / sqrt(n()))
+            sem = var(Quartile_numeric, na.rm = T) / sqrt(n()))
 
 average_sjr_quartile_chart <-
   average_sjr_quartile %>% 
   ggplot(aes(x = PY, y = average_quartile, group = 1)) +
-  geom_ribbon(aes(ymin = average_quartile - sem, ymax = average_quartile + sem), fill = "grey70") +
-  geom_line() +
-  geom_point() + 
+  #geom_ribbon(aes(ymin = average_quartile - sem, ymax = average_quartile + sem), fill = "grey70") +
+  geom_line(color = "grey", lwd = 1) +
+  geom_point(shape=20, size=12) +
+  geom_errorbar(aes(ymin = average_quartile - sem, ymax= average_quartile + sem), width=.3, colour = 'red') +
+  geom_text(aes(label=round(average_quartile,2)),color = "white", size = 3) +
   scale_y_continuous(trans = "reverse") +
-  theme(panel.grid.minor.x = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        axis.text.y = element_text(size = 22),
-        axis.text.x = element_text(size = 22)) + 
+  theme(panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text.y = element_blank(), legend.text = element_text(size = 11),
+        axis.text.x = element_text(size = 10), panel.border = element_blank()) + 
   expand_limits(y = 1) +
   labs(title = NULL,
        subtitle = NULL,
@@ -609,10 +612,10 @@ average_sjr_quartile_chart <-
        y = "")
 
 ggsave("average_sjr_quartile_evolution.pdf", plot = average_sjr_quartile_chart, device = "pdf", path = directories$dir_sjr, units = "in",
-       width = 60, height = 20, limitsize = FALSE)
+       width = 10, height = 6, limitsize = FALSE)
 
 ggsave("average_sjr_quartile_evolution.jpeg", plot = average_sjr_quartile_chart, device = "jpeg", path = directories$dir_sjr, units = "in",
-       width = 60, height = 20, limitsize = FALSE)
+       width = 10, height = 6, limitsize = FALSE)
 
 write.xlsx(average_sjr_quartile, paste(directories$dir_sjr, "average_sjr_quartile_evolution.xlsx", sep = "/"), overwrite = T)
 
@@ -696,7 +699,7 @@ ALL_authors_country_papers <-
   unite("ALL_authors", c(AU1_CO, AU_CO), sep = ";", na.rm = T, remove = F) %>% 
   separate_rows(ALL_authors, sep = ";") %>% 
   mutate(ALL_authors = trimws(ALL_authors, which = "both")) %>% 
-  filter(str_detect(ALL_authors, "")) %>% 
+  filter(str_detect(ALL_authors, "\\b")) %>% 
   distinct(article_id, ALL_authors, .keep_all = T) %>% 
   group_by(ALL_authors) %>% 
   summarise(n = n(),
@@ -914,7 +917,7 @@ country_network <-
   unite("ALL_authors", c(AU1_CO, AU_CO), sep = ";", na.rm = T, remove = F) %>% 
   separate_rows(ALL_authors, sep = ";") %>% 
   mutate(ALL_authors = trimws(ALL_authors, which = "both")) %>% 
-  filter(str_detect(ALL_authors, "")) %>% 
+  filter(str_detect(ALL_authors, "\\b")) %>% 
   distinct(article_id, ALL_authors, .keep_all = T) %>% 
   as_tibble() %>% 
   select(article_id, ALL_authors) %>% 
@@ -1040,7 +1043,7 @@ affil_ID_names_countries <-
 
 affil_byacademic_articles <- 
   affil_table_clean_V2 %>% 
-  filter(str_detect(affiliation_name, "")) %>% 
+  filter(str_detect(affiliation_name, "\\b")) %>% 
   group_by(Academic) %>% 
   count(affiliation_id, affiliation_name, sort = T, name = "metric") %>% 
   slice_max(metric, n = 20) %>% 
@@ -1050,7 +1053,7 @@ affil_byacademic_articles <-
 
 affil_byacademic_citations <- 
   affil_table_clean_V2 %>% 
-  filter(str_detect(affiliation_name, ""),
+  filter(str_detect(affiliation_name, "\\b"),
          !is.na(affiliation_id)) %>% 
   group_by(Academic, affiliation_id, affiliation_name) %>% 
   summarise(metric = sum(TC)) %>%
@@ -1100,7 +1103,7 @@ write.xlsx(affil_byacademic_articles, paste(directories$dir_affiliations, "Artic
 
 affil_table_clean_V2 %>% 
   filter(Academic == "Non Academic",
-         str_detect(affiliation_name, "")) %>% 
+         str_detect(affiliation_name, "\\b")) %>% 
   count(affiliation_id, affiliation_name, sort = T) %>% 
   slice_max(n, n = 20) %>% 
   mutate(affiliation_name = fct_reorder(affiliation_name, n)) %>% 
@@ -1137,7 +1140,7 @@ ggsave("fill_academic_non_academic_top20_art.jpeg", plot = fill_academic_non_aca
 ###### Plots top 20 affiliations, filled by academic. ######
 
 affil_table_clean_V2 %>% 
-  filter(str_detect(affiliation_name, "")) %>% 
+  filter(str_detect(affiliation_name, "\\b")) %>% 
   add_count(affiliation_name, name = "Articles_affiliation") %>% 
   distinct(affiliation_name, Articles_affiliation, .keep_all = T) %>% 
   slice_max(Articles_affiliation, n = 20) %>% 
@@ -1528,7 +1531,7 @@ keywords_info_citing_most_cited <-
   group_by(Original_paper) %>% 
   separate_rows(keywords, sep = ";") %>% 
   mutate(keywords = trimws(keywords, which = "both")) %>% 
-  filter(str_detect(keywords, "",),
+  filter(str_detect(keywords, "\\b",),
          !str_detect(keywords, "5G")) %>% 
   add_count(keywords, name = "keyword_per_original_paper") %>%
   distinct(Original_paper, keywords, .keep_all = T) %>% 
@@ -1544,7 +1547,7 @@ Country_info_citing_most_cited <-
   group_by(Original_paper) %>% 
   separate_rows(AU_CO, sep = ";") %>% 
   mutate(AU_CO = trimws(AU_CO, which = "both")) %>% 
-  filter(str_detect(AU_CO, "",)) %>% 
+  filter(str_detect(AU_CO, "\\b",)) %>% 
   distinct(article_id, AU_CO, .keep_all = T) %>% 
   add_count(AU_CO, name = "Countries_per_original_paper") %>%
   distinct(Original_paper, AU_CO, .keep_all = T) %>% 
@@ -1560,7 +1563,7 @@ Affil_info_citing_most_cited <-
   group_by(Original_paper) %>% 
   separate_rows(AU_UN, sep = ";") %>% 
   mutate(AU_UN = trimws(AU_UN, which = "both")) %>% 
-  filter(str_detect(AU_UN, "",)) %>% 
+  filter(str_detect(AU_UN, "\\b",)) %>% 
   distinct(article_id, AU_UN, .keep_all = T) %>% 
   add_count(AU_UN, name = "Affiliation_per_original_paper") %>%
   distinct(Original_paper, AU_UN, .keep_all = T) %>% 
@@ -1576,7 +1579,7 @@ Category_info_citing_most_cited <-
   group_by(Original_paper) %>% 
   separate_rows(SC, sep = ";") %>% 
   mutate(SC = trimws(SC, which = "both")) %>% 
-  filter(str_detect(SC, "",)) %>% 
+  filter(str_detect(SC, "\\b",)) %>% 
   distinct(article_id, SC, .keep_all = T) %>% 
   add_count(SC, name = "Category_per_original_paper") %>%
   distinct(Original_paper, SC, .keep_all = T) %>% 
@@ -1591,7 +1594,7 @@ inner_join(numerical_info_citing_most_cited, keywords_info_citing_most_cited, by
   inner_join(Country_info_citing_most_cited, by = "Original_paper") %>% 
   inner_join(Affil_info_citing_most_cited, by = "Original_paper") %>% 
   inner_join(Category_info_citing_most_cited, by = "Original_paper") %>% 
-  write.xlsx(paste(directories$dir_most_cited_citing_most_cited, "Most_cited_citing_key_features.xlsx", sep = "/"))
+  write.xlsx(paste(directories$dir_most_cited_citing_most_cited, "Most_cited_citing_key_features.xlsx", sep = "/"), overwrite = T)
 
 print("Most cited citing most cited: done")
 
