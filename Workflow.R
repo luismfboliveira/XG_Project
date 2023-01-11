@@ -117,7 +117,7 @@ affil_table_clean_V2 <-
          affiliation_name = str_replace_all(affiliation_name, "\\.|\\(|\\)|\\-|\\\\", " "),
          affiliation_name = trimws(affiliation_name, which = "both"),
          article_id = as.numeric(article_id)) %>% 
-  filter(str_detect(affiliation_name, "")) %>%
+  filter(str_detect(affiliation_name, "\\b")) %>%
   distinct(article_id, affiliation_id, .keep_all = T) %>%
   mutate(affiliation_name = case_when(affiliation_name == "The Electrical And Computer Engineering Department" ~ "Jacobs School Of Engineering",
                                       TRUE ~ affiliation_name),
@@ -181,7 +181,7 @@ keywords_clean <-
          keywords_new = trimws(keywords_new, which = "both"),
          keywords_new = str_squish(keywords_new),
          keywords_new = str_to_upper(lemmatize_words(keywords_new))) %>% 
-  filter(str_detect(keywords_new, ""),
+  filter(str_detect(keywords_new, "\\b"),
          !str_detect(keywords_new, "4G|FOURTH GENERATION"))
 
 write.xlsx(keywords_clean, paste(directories$dir_keywords, "keywords_clean.xlsx", sep = "/"), overwrite = T)
