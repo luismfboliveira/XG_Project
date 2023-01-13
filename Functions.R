@@ -1,3 +1,45 @@
+read_requirements <- function(requirements_file){
+  
+  requirements <- read.table(requirements_file, row.names = NULL, col.names = c("package", "version"))
+  
+  return(requirements)
+  
+}
+
+requirement_handler = function(x) {
+  tryCatch(
+    return(as.character(packageVersion(x))),
+    warning = function(w) {return(print("warning message"))},
+    error = function(e) {return("install")}
+  )
+}
+
+install_requirements <- function(requirements_object){
+  
+  requirements_current_version <-
+    cbind(requirements_object, action = sapply(requirements_object[,1], requirement_handler))
+  
+  requirements_current_version <- subset(requirements_current_version, version != action)
+  
+  if ( dim(requirements_current_version)[1] == 0 ) {
+    print("Requirements are met!")
+  }
+  else if ( dim(requirements_current_version)[1] != 0) {
+    print("Some requirements need other versions!")
+    for (i in 1:nrow(requirements_current_version)){
+      install_version(as.character(requirements_current_version[i, 1]),
+                      as.character(requirements_current_version[i, 2]),
+                      dependencies = TRUE,
+                      upgrade = TRUE)
+    }
+    print("All requirements met!")
+  }
+  
+  sapply(requirements_object[,1], require, character.only = TRUE)
+  
+}
+
+
 checks_loaded_packages <- function(required_packages){
   
   all_loaded_packages <- (.packages())
