@@ -48,12 +48,6 @@ collection_edit <-
   left_join(flags, by = "article_id") %>% 
   relocate(new_keywords:pct, .after = "ID")
 
-write.xlsx(collection_edit,
-           paste(wd, "collection_flaged_kw.xlsx", sep = "/"),
-           overwrite = T)
-  
-
-
-  
-
-
+write.csv(collection_edit,
+           paste(wd, "collection_flaged_kw.csv", sep = "/"),
+           row.names = FALSE)
