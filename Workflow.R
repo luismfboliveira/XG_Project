@@ -4,13 +4,13 @@ source("Functions.R")
 
 ##### Installs/Loads Packages #####
 
-if (!require("pacman")) install.packages("pacman")
+requirements <- read_requirements("requirements.txt")
 
-required_packages <- c("readxl", "bibliometrix", "tidyverse", "ggrepel", "scales",
-                       "maps", "tidytext", "topicmodels", "stm", "rscopus", "openxlsx", "igraph", "countrycode",
-                       "widyr", "wpp2019", "textstem", "glue", "ggthemes")
+if (!require("remotes")) install.packages("remotes")
 
-pacman::p_load(char = required_packages)
+install_requirements(requirements)
+
+required_packages <- requirements[,1]
 
 checks_loaded_packages(required_packages)
 
