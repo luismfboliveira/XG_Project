@@ -4,21 +4,35 @@ source("Functions.R")
 
 ##### Installs/Loads Packages #####
 
-requirements <- read_requirements("requirements.txt")
+requirements <- read.table("requirements.txt")
 
-if (!require("remotes")) install.packages("remotes")
+# if (!require("remotes")) install.packages("remotes")
 
-install_requirements(requirements)
+# install_requirements(requirements)
 
-required_packages <- requirements[,1]
+# required_packages <- requirements[,1]
 
-checks_loaded_packages(required_packages)
+if (!require("pacman")) install.packages("pacman")
+required_packages <- c("readxl", "bibliometrix",
+                      "tidyverse", "ggrepel", "scales",
+                      "maps", "tidytext", "topicmodels",
+                      "stm", "rscopus", "openxlsx",
+                      "igraph", "countrycode", "widyr", "wpp2019",
+                      "textstem", "glue", "ggthemes"
+                      )
+pacman::p_load(char = required_packages)
+
+checks_loaded_packages(required_packages) 
 
 ##### Setting Scopus API key #####
 
 api_key <- "a37e8a7500807b7438eb438c1324c85a" #please insert your Scopus API key here.
 
 checks_api_access(your_api_key = api_key)
+
+##### Creates output directories #####
+
+directories <- creates_output_directories()
 
 ##### Checks input files #####
 
@@ -27,10 +41,6 @@ data_file_check <- checks_input_data_files()
 ##### Sets theme for plots #####
 
 theme_set(theme_light())
-
-##### Creates output directories #####
-
-directories <- creates_output_directories()
 
 ##### Load Data #####
 
@@ -84,54 +94,63 @@ if (data_file_check$has_API_data) {
 
 ###### SJR Info ######
 
-
 process_sjr_raw_data()
 load(paste(directories$dir_input_data, "Journal_metrics_info.RData", sep = "/"))
-
 
 ###### Aggregated SC categories ######
 
 Aggreagted_SC <- 
-  read.xlsx(paste(directories$dir_input_data, "Aggregated Category Groups_SC.xlsx", sep = "/"),
-                           sheet = "Final") %>% 
+  read.xlsx(
+    paste(directories$dir_input_data, "Aggregated Category Groups_SC.xlsx", sep = "/"), sheet = "Final"
+  ) %>% 
   as_tibble() %>% 
-  mutate(SC = trimws(SC, "both"),
-         SC = str_squish(SC))
+  mutate(
+    SC = trimws(SC, "both"),
+    SC = str_squish(SC)
+  )
 
 ###### Most cited citing most cited ######
 
-
 process_most_cited_citing_most_cited()
 load(paste(directories$dir_input_data, "Citing_most_cited.RData", sep = "/")) # Object for citing most cited comp.
-
 
 ##### Pre - Process #####
 
 ###### Affiliations ######
 
 affil_table_clean_V2 <-
-  API_info$affil_info %>%
+  API_info$affil_info %>% 
   mutate(affiliation_name = str_replace_all(affiliation_name, "&amp;", "&"),
-         affiliation_name = str_replace_all(affiliation_name, c("Mongkut&x92;s" = "Mongkut's", "IRT b&lt;&gt;com" = "IRT B-Com")),
+         affiliation_name = str_replace_all(affiliation_name, c("Mongkut&x92;s" = "Mongkut\\'s", "IRT b&lt;&gt;com" = "IRT B-Com")),
          affiliation_name = stringi::stri_trans_general(affiliation_name, "ASCII"),
          affiliation_name = str_replace_all(affiliation_name, "\\.|\\(|\\)|\\-|\\\\", " "),
          affiliation_name = trimws(affiliation_name, which = "both"),
-         article_id = as.numeric(article_id)) %>% 
+         article_id = as.numeric(article_id)
+  ) %>% 
   filter(str_detect(affiliation_name, "\\b")) %>%
-  distinct(article_id, affiliation_id, .keep_all = T) %>%
-  mutate(affiliation_name = case_when(affiliation_name == "The Electrical And Computer Engineering Department" ~ "Jacobs School Of Engineering",
-                                      TRUE ~ affiliation_name),
-         Academic = case_when(str_detect(str_to_upper(affiliation_name),
-                                         paste("UNIV","SCHOOL","INSTI","COLL","ECO","ACADEM",
-                                               "YLIOPISTO", "ESC", "POLYTEC", "POLITEC", "FACUL",
-                                               "CENTRE FOR WIRELESS COMMUNICATIONS FINLAND",
-                                               "KU LEUVEN", "UNSW SYDNEY", "CONSIGLIO NAZIONALE DELLE RICERCHE",
-                                               "CEA LETI", "COMMONWEALTH SCIENTIFIC AND INDUSTRIAL RESEARCH ORGANIZATION",
-                                               "PANEPISTIMION PATRON", "LABORATOIRE DES SIGNAUX ET SYSTEMES",
-                                               "SUPELEC CAMPUS DE GIF", "PANEPISTIMIO", "ISTITUTO", "MIT", sep = "|")) ~ "Academic",
-                              TRUE ~ "Non Academic")) %>% 
+  distinct(article_id, affiliation_id, .keep_all = TRUE) %>%
+  mutate(
+    affiliation_name = 
+      case_when(
+        affiliation_name == "The Electrical And Computer Engineering Department" ~ "Jacobs School Of Engineering",
+                            TRUE ~ affiliation_name
+      ),
+    Academic = 
+      case_when(
+        str_detect(str_to_upper(affiliation_name),
+                  paste("UNIV", "SCHOOL", "INSTI", "COLL", "ECO", "ACADEM",
+                        "YLIOPISTO", "ESC", "POLYTEC", "POLITEC", "FACUL",
+                        "CENTRE FOR WIRELESS COMMUNICATIONS FINLAND",
+                        "KU LEUVEN", "UNSW SYDNEY", "CONSIGLIO NAZIONALE DELLE RICERCHE",
+                        "CEA LETI", "COMMONWEALTH SCIENTIFIC AND INDUSTRIAL RESEARCH ORGANIZATION",
+                        "PANEPISTIMION PATRON", "LABORATOIRE DES SIGNAUX ET SYSTEMES",
+                        "SUPELEC CAMPUS DE GIF", "PANEPISTIMIO", "ISTITUTO", "MIT", sep = "|"
+                  )) ~ "Academic",
+                  TRUE ~ "Non Academic"
+        )
+  ) %>% 
   left_join(M_clean %>% 
-              select(article_id, TC, PY),
+              select(article_id, TC, PY, DB),
             by = "article_id")
 
 write.xlsx(affil_table_clean_V2, paste(directories$dir_affiliations, "affiliations_enriched.xlsx", sep = "/"), overwrite = T)
