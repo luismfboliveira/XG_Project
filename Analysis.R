@@ -545,17 +545,32 @@ sjr_processed <-
   mutate(AU_CO = trimws(AU_CO, which = "both")) %>% 
   filter(str_detect(AU_CO, "\\b")) %>% 
   distinct(article_id, AU_CO, .keep_all = TRUE) %>% 
-  add_count(AU_CO, name = "Number_of_articles_CO") %>% 
-  filter(dense_rank(desc(Number_of_articles_CO)) %in% 1:20)  %>%
-  select(PY, Quartile_numeric, AU_CO) %>%
-  group_by(AU_CO, PY) %>% 
-  summarise(average_quartile = mean(Quartile_numeric, na.rm  =T),
-            sem = var(Quartile_numeric) / sqrt(n())) %>%
-  ungroup() %>% 
-  mutate(AU_CO = fct_reorder(AU_CO, -average_quartile, last))
+  add_count(AU_CO, name = "Number_of_articles_CO")
+
+sjr_quartile_evolution_per_country <-
+       sjr_processed %>% 
+       select(PY, Quartile_numeric, AU_CO) %>%
+       group_by(AU_CO, PY) %>% 
+       summarise(articles = n(),
+              average_quartile = mean(Quartile_numeric, na.rm = TRUE),
+              sem = var(Quartile_numeric, na.rm = TRUE) / sqrt(n())) %>%
+       ungroup() %>% 
+       select(AU_CO, PY, average_quartile) %>%
+       pivot_wider(names_from = "PY", values_from = "average_quartile", names_sort = TRUE)
+
+sjr_quartile_evolution_top_20_countries <-
+       sjr_processed %>% 
+       filter(dense_rank(desc(Number_of_articles_CO)) %in% 1:20)  %>%
+       select(PY, Quartile_numeric, AU_CO) %>%
+       group_by(AU_CO, PY) %>% 
+       summarise(articles = n(),
+              average_quartile = mean(Quartile_numeric, na.rm = TRUE),
+              sem = var(Quartile_numeric, na.rm = TRUE) / sqrt(n())) %>%
+       ungroup() %>% 
+       mutate(AU_CO = fct_reorder(AU_CO, -average_quartile, last))
 
 evolution_sjr_rank <- 
-  sjr_processed %>% 
+  sjr_quartile_evolution_top_20_countries %>% 
   ggplot(aes(x = PY, y = AU_CO, fill = average_quartile)) +
   geom_tile(colour = "white") +
   scale_fill_continuous(high = "#56B1F7", low = "#132B43") +
@@ -576,7 +591,9 @@ ggsave("sjr_evolution_top20.pdf", plot = evolution_sjr_rank, device = "pdf", pat
 ggsave("sjr_evolution_top20.jpeg", plot = evolution_sjr_rank, device = "jpeg", path = directories$dir_sjr, units = "in",
        width = 60, height = 20, limitsize = FALSE)
 
-write.xlsx(sjr_processed, paste(directories$dir_sjr, "evolution_sjr_top20.xlsx", sep = "/"), overwrite = T)
+write.xlsx(sjr_quartile_evolution_top_20_countries, paste(directories$dir_sjr, "evolution_sjr_top20.xlsx", sep = "/"), overwrite = T)
+
+write.xlsx(sjr_quartile_evolution_per_country, paste(directories$dir_sjr, "evolution_sjr_quartile_per_country.xlsx", sep = "/"), overwrite = T)
 
 ###### Temporal evolution of average SJR quartile ######
 
@@ -914,20 +931,21 @@ ggsave("map_number_articles_country.jpeg", plot = map_number_articles_country, d
 
 country_network <- 
   M_clean %>% 
-  unite("ALL_authors", c(AU1_CO, AU_CO), sep = ";", na.rm = T, remove = F) %>% 
+  unite("ALL_authors", c(AU1_CO, AU_CO), sep = ";", na.rm = TRUE, remove = FALSE) %>% 
   separate_rows(ALL_authors, sep = ";") %>% 
   mutate(ALL_authors = trimws(ALL_authors, which = "both")) %>% 
   filter(str_detect(ALL_authors, "\\b")) %>% 
-  distinct(article_id, ALL_authors, .keep_all = T) %>% 
-  as_tibble() %>% 
-  select(article_id, ALL_authors) %>% 
+  distinct(article_id, ALL_authors, .keep_all = TRUE) %>% 
+  select(article_id, ALL_authors, DB) %>% 
   rename(AU_CO = ALL_authors) %>% 
   group_by(article_id) %>% 
-  summarise(AU_CO = paste(AU_CO, collapse = ";")) %>% as.data.frame()
+  summarise(AU_CO = paste(AU_CO, collapse = ";"),
+           DB = unique(DB)
+  ) %>% 
+  select(article_id, AU_CO, DB) %>% 
+  as.data.frame()
 
-teste_2 <- country_network %>% select(article_id, AU_CO)
-
-net_country_collaboration <- biblioNetwork(teste_2, analysis = "collaboration", network = "countries", sep = ";")
+net_country_collaboration <- biblioNetwork(country_network, analysis = "collaboration", network = "countries", sep = ";")
 
 # We export the network for a folder in the output (C:\Users\luis\OneDrive\5G\Output\Affiliation Collaboration), to visualize it in VOSVIEWER.
 # We exported with n = 200, this n = 50 is for alternative plot with bibliometrix.
@@ -1210,9 +1228,10 @@ print("Affiliation analysis: done")
 
 affil_net <-
   affil_table_clean_V2 %>% 
-  select(article_id, affiliation_name) %>% 
+  select(article_id, affiliation_name, DB) %>% 
   group_by(article_id) %>% 
-  summarise(AU_UN = paste(affiliation_name, collapse = ";")) %>%
+  summarise(AU_UN = paste(affiliation_name, collapse = ";"),
+            DB = unique(DB)) %>%
   mutate(AU_UN = str_replace_all(AU_UN, '\\"', "")) %>% 
   as.data.frame() %>% 
   biblioNetwork(analysis = "collaboration", network = "universities", sep = ";")
@@ -1409,11 +1428,12 @@ aggregated_SC_ts <-
        x = "",
        y = "")
 
-ggsave("aggregated_SC_categories_ts.pdf", plot = aggregated_SC_ts, device = "pdf", path = directories$dir_aggregated_SC,
+ggsave("aggregated_SC_categories_ts.pdf", plot = aggregated_SC_ts, device = "pdf", path = directories$dir_aggregated_sc,
        units = "in",
        width = 20, height = 10)
 
-ggsave("aggregated_SC_categories_ts.jpeg", plot = aggregated_SC_ts, device = "pdf", path = directories$dir_aggregated_SC,
+ggsave("aggregated_SC_categories_ts.jpeg",
+       plot = aggregated_SC_ts, device = "pdf", path = directories$dir_aggregated_sc,
        units = "in",
        width = 20, height = 10)
 
@@ -1423,7 +1443,8 @@ Aggregated_categories %>%
   group_by(Category_group) %>% 
   summarise(Articles = n(),
             Percentage = n() / total_papers,
-            Average_citations_year = mean(Citations_year)) %>% distinct(Category_group, .keep_all = T)
+            Average_citations_year = mean(Citations_year)) %>% 
+            distinct(Category_group, .keep_all = TRUE)
 
 summary_table_categories <- 
   
@@ -1440,7 +1461,7 @@ summary_table_categories <-
                 total_citations = sum(TC)
       ),
     Aggregated_categories %>% 
-      distinct(article_id, Category_group,.keep_all = T) %>% 
+      distinct(article_id, Category_group, .keep_all = TRUE) %>% 
       #filter(PY >= 2014) %>%
       group_by(PY) %>% 
       count(Category_group) %>%
@@ -1448,12 +1469,12 @@ summary_table_categories <-
       group_by(Category_group) %>% 
       mutate(n_less_1 = lag(n, 1),
              growth = (n - n_less_1) / n_less_1) %>% 
-      summarise(Average_growth_YoY = mean(growth, na.rm = T)),
+      summarise(Average_growth_YoY = mean(growth, na.rm = TRUE)),
     
     by = "Category_group") %>% 
   arrange(desc(Articles))
 
-write.xlsx(summary_table_categories, paste(directories$dir_aggregated_SC,
+write.xlsx(summary_table_categories, paste(directories$dir_aggregated_sc,
                                            "Indicators_aggregated_SC_categories.xlsx", sep = "/"), overwrite = T)
 
 print("Subject categories: done")
@@ -1976,4 +1997,55 @@ ggsave("growth_kw_tri_evo.jpeg", plot = growth_kw_tri_evo, device = "jpeg", path
 
 print("Keywords > bigrams: done")
 
+##### Evolution specific topics #####
 
+topics <- c("STANDARDS", "REGULATION", "REGULATIONS", "CYBERSECURITY", "CYBER-SECURITY", "SECURITY", "SUSTAINABILITY",
+            "SHARING", "INFRASTRUCTURE", "INFRASTRUCTURES", "PATENT", "PATENTS", "STANDARD ESSENTIAL PATENT", "VERTICALS", "VERTICAL")
+
+temp_topics <- vector(mode = "list", length = length(topics))
+
+for (i in 1:length(topics)){
+  
+  temp_topics[[i]] <- 
+    M_clean %>% 
+    as_tibble() %>% 
+    filter(str_detect(TI, topics[[i]])|str_detect(AB, topics[[i]])|str_detect(ID, topics[[i]])|str_detect(DE, topics[[i]])) %>% 
+    mutate(topic = topics[[i]]) %>% 
+    select(article_id, AU, SO, TI, PY, TC, AU1_CO, AU_CO, AB, ID, DE, topic)
+  
+}
+
+specific_topics <- bind_rows(temp_topics) %>% 
+  mutate(topic = case_when(topic == "CYBER-SECURITY" ~ "CYBERSECURITY",
+                           topic == "PATENTS" ~ "PATENT",
+                           topic == "VERTICAL" ~ "VERTICALS",
+                           topic == "INFRASTRUCTURES" ~ "INFRASTRUCTURE",
+                           topic == "REGULATIONS" ~ "REGULATION",
+                           TRUE ~ topic))
+
+evolution_of_topics <-
+       specific_topics %>% 
+       group_by(topic, PY) %>% 
+       summarise(articles = n()) %>% 
+       ungroup() %>% 
+       mutate(topic = fct_reorder(topic, -articles, last),
+              PY = as.factor(PY))
+
+evolution_of_topics_plot <-
+       evolution_of_topics %>% 
+       ggplot(aes(x = PY, y = articles, color = topic, group = topic)) +
+       geom_line(lwd = 1) + 
+       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), strip.text = element_text(size = 15),
+              axis.text.y = element_text(size = 14), axis.text.x = element_text(size = 14)) +
+       labs(title = "Topic evolution",
+              x = "",
+              y = "",
+              color = "")
+
+ggsave("evolution_of_topics.pdf", plot = evolution_of_topics_plot, device = "pdf", path = directories$dir_evolution_of_topics, units = "in",
+       width = 20, height = 10)
+
+ggsave("evolution_of_topics.jpeg", plot = evolution_of_topics_plot, device = "jpeg", path = directories$dir_evolution_of_topics, units = "in",
+       width = 20, height = 10)
+
+write.xlsx(evolution_of_topics, paste(directories$dir_evolution_of_topics, "evolution_of_topics.xlsx", sep = "/"), overwrite = T)
