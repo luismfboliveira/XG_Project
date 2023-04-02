@@ -1,4 +1,4 @@
-read_requirements <- function(requirements_file){
+read_requirements <- function(requirements_file) {
   
   requirements <- read.table(requirements_file, row.names = NULL, col.names = c("package", "version"))
   
@@ -6,7 +6,7 @@ read_requirements <- function(requirements_file){
   
 }
 
-requirement_handler = function(x) {
+requirement_handler <- function(x) {
   tryCatch(
     return(as.character(packageVersion(x))),
     warning = function(w) {return(print("warning message"))},
@@ -17,17 +17,17 @@ requirement_handler = function(x) {
 install_requirements <- function(requirements_object){
   
   requirements_current_version <-
-    cbind(requirements_object, action = sapply(requirements_object[,1], requirement_handler))
+    cbind(requirements_object,
+    action = sapply(requirements_object[, 1], requirement_handler))
   
   requirements_current_version <- subset(requirements_current_version, version != action)
   
-  if ( dim(requirements_current_version)[1] == 0 ) {
+  if (dim(requirements_current_version)[1] == 0) {
     print("Requirements are met!")
-  }
-  else if ( dim(requirements_current_version)[1] != 0) {
+  } else if ( dim(requirements_current_version)[1] != 0) {
     print("Some requirements need other versions!")
-    for (i in 1:nrow(requirements_current_version)){
-      install_version(as.character(requirements_current_version[i, 1]),
+    for (i in seq_len(nrow(requirements_current_version))) {
+      remotes::install_version(as.character(requirements_current_version[i, 1]),
                       as.character(requirements_current_version[i, 2]),
                       dependencies = TRUE,
                       upgrade = TRUE)
@@ -35,10 +35,11 @@ install_requirements <- function(requirements_object){
     print("All requirements met!")
   }
   
-  sapply(requirements_object[,1], require, character.only = TRUE)
+  sapply(requirements_object[, 1], require, character.only = TRUE)
   
 }
 
+test <- "this"
 
 checks_loaded_packages <- function(required_packages){
   
@@ -176,7 +177,7 @@ creates_output_directories <- function() {
     
   }
   
-  dir_aggregated_SC <- paste(wd, "output_data", "Aggregated SC categories",  sep = "/")
+  dir_aggregated_sc <- paste(wd, "output_data", "Aggregated SC categories",  sep = "/")
   
   ###### Affiliations ######
   
@@ -232,7 +233,7 @@ creates_output_directories <- function() {
   } else {
     
     dir.create(paste(dir_output_data, "most_cited_papers", sep = "/"))
-    print(glue("Directory for most_cited_papers created"))
+    print(glue::glue("Directory for most_cited_papers created"))
     
   }
   
@@ -247,7 +248,7 @@ creates_output_directories <- function() {
   } else {
     
     dir.create(paste(dir_output_data, "sources", sep = "/"))
-    print(glue("Directory for sources created"))
+    print(glue::glue("Directory for sources created"))
     
   }
   
@@ -262,27 +263,46 @@ creates_output_directories <- function() {
   } else {
     
     dir.create(paste(dir_output_data, "most_cited_citing_most_cited", sep = "/"))
-    print(glue("Directory for most_cited_citing_most_cited created"))
+    print(glue::glue("Directory for most_cited_citing_most_cited created"))
     
   }
   
   dir_most_cited_citing_most_cited <- paste(wd, "output_data", "most_cited_citing_most_cited", sep = "/")
+
+  ###### Evolution of specific topics ######
   
+  if (dir.exists(paste(dir_output_data, "evolution_of_topics", sep = "/"))) {
+    
+    print("Directory for evolution_of_topics already created")
+    
+  } else {
+    
+    dir.create(paste(dir_output_data, "evolution_of_topics", sep = "/"))
+    print(glue::glue("Directory for evolution_of_topics created"))
+    
+  }
   
- return(list(dir_input_data = dir_input_data, dir_output_data = dir_output_data,
-             dir_affil_net = dir_affil_net, dir_keywords = dir_keywords, dir_affiliations = dir_affiliations,
-             dir_authors = dir_authors, dir_most_cited_papers = dir_most_cited_papers, dir_country_net = dir_country_net,
-             dir_general_analysis = dir_general_analysis, dir_herfindahal = dir_herfindahal, dir_sjr = dir_sjr_data,
-             dir_aggregated_SC = dir_aggregated_SC, dir_sources = dir_sources,
-             dir_most_cited_citing_most_cited = dir_most_cited_citing_most_cited))
+  dir_evolution_of_topics <- paste(wd, "output_data", "evolution_of_topics", sep = "/")
+  
+ return(
+  list(
+    dir_input_data = dir_input_data, dir_output_data = dir_output_data,
+    dir_affil_net = dir_affil_net, dir_keywords = dir_keywords, dir_affiliations = dir_affiliations,
+    dir_authors = dir_authors, dir_most_cited_papers = dir_most_cited_papers, dir_country_net = dir_country_net,
+    dir_general_analysis = dir_general_analysis, dir_herfindahal = dir_herfindahal, dir_sjr = dir_sjr_data,
+    dir_aggregated_sc = dir_aggregated_sc, dir_sources = dir_sources,
+    dir_most_cited_citing_most_cited = dir_most_cited_citing_most_cited,
+    dir_evolution_of_topics = dir_evolution_of_topics
+  )
+)
 }
 
 
 checks_api_access <- function(your_api_key) {
   
-  set_api_key(your_api_key)
+  rscopus::set_api_key(your_api_key)
   
-  if (have_api_key()) {
+  if (rscopus::have_api_key()) {
     
     print("User has Scopus API key")
     
@@ -311,7 +331,7 @@ checks_input_data_files <- function() {
   has_jar_file <- "VOSviewer.jar" %in% files_input_data
   has_most_cited_citing_most_cited_data <- "Citing_most_cited.RData" %in% files_input_data
   
-  print(glue("Files present in input_data folder:\nInitial dataset: {has_initial_dataset}\n",
+  print(glue::glue("Files present in input_data folder:\nInitial dataset: {has_initial_dataset}\n",
              "API data: {has_API_data}\n",
              "Previous analysis: {has_previous_analysis}\n",
              "SJR data: {has_sjr_data}\n",
@@ -321,32 +341,32 @@ checks_input_data_files <- function() {
   
   if (!has_initial_dataset) {
     
-    stop(glue("User does not have file 'initial_data.xlsx' in folder 'input_data'"))
+    stop(glue::glue("User does not have file 'initial_data.xlsx' in folder 'input_data'"))
     
-  } else if (has_initial_dataset & !has_API_data) {
+  } else if (has_initial_dataset && !has_API_data) {
     
-    warning(glue("User has initial data but does not have API data (API_data.RData) in 'input_data' folder.\n",
+    warning(glue::glue("User has initial data but does not have API data (API_data.RData) in 'input_data' folder.\n",
                  "Some analysis will not be possible."))
     
-  } else if (has_initial_dataset & has_API_data) {
+  } else if (has_initial_dataset && has_API_data) {
     
-    print(glue("User has initial data and API data in 'input_data' folder.\n",
+    print(glue::glue("User has initial data and API data in 'input_data' folder.\n",
                "All analysis will be performed."))
     
   } 
   
   if (!has_jar_file) {
     
-    warning(glue("User needs file 'VOSviewer.jar' in input_data for network plots in VOSviewer."))
+    warning(glue::glue("User needs file 'VOSviewer.jar' in input_data for network plots in VOSviewer."))
     
   } else if (has_jar_file) {
     
     file.copy(paste(paste(getwd(), "input_data", sep = "/"),"VOSviewer.jar", sep = "/"),
-              paste(paste(getwd(), "output_data","country_network", sep = "/")))
+              paste(paste(getwd(), "output_data", "country_network", sep = "/")))
     file.copy(paste(paste(getwd(), "input_data", sep = "/"),"VOSviewer.jar", sep = "/"),
-              paste(paste(getwd(), "output_data","affiliation_network", sep = "/")))
+              paste(paste(getwd(), "output_data", "affiliation_network", sep = "/")))
     
-    print(glue("Jar file was copied to output network directories"))
+    print(glue::glue("Jar file was copied to output network directories"))
     
   }
   
@@ -355,7 +375,7 @@ checks_input_data_files <- function() {
   
 }
 
-search_for_missing_dois_scopus <- function(tbl){
+search_for_missing_dois_scopus <- function(tbl) {
   
   articles_not_found <- 0
   articles_doi_found <- 0
@@ -367,7 +387,12 @@ search_for_missing_dois_scopus <- function(tbl){
     
     article_to_search <- tbl[["TI_search"]][[i]]
     print(article_to_search)
-    api_response <- generic_elsevier_api(type = "search", api_key = api_key, query = as.character(glue('title({article_to_search})')), search_type = "scopus")
+    api_response <- 
+        rscopus::generic_elsevier_api(
+          type = "search", api_key = api_key, 
+          query = as.character(glue::glue("title({article_to_search})")),
+          search_type = "scopus"
+        )
     
     found_articles <- as.integer(api_response$content$`search-results`$`opensearch:totalResults`)
     
@@ -378,12 +403,12 @@ search_for_missing_dois_scopus <- function(tbl){
       tbl[["DI"]][[i]] <- "Article not found"
       articles_not_found <- articles_not_found + 1
       
-    } else if (found_articles == 1 & !NULL_doi) {
+    } else if (found_articles == 1 && !NULL_doi) {
       
       tbl[["DI"]][[i]] <- api_response$content$`search-results`$entry[[1]]$`prism:doi`
       articles_doi_found <- articles_doi_found + 1
       
-    } else if (found_articles == 1 & NULL_doi) {
+    } else if (found_articles == 1 && NULL_doi) {
       
       tbl[["DI"]][[i]] <- "No DOI"
       articles_doi_missing <- articles_doi_missing + 1
@@ -399,16 +424,16 @@ search_for_missing_dois_scopus <- function(tbl){
   
   print("Tentative: Enriching missing DOI articles from WoS with SCOPUS data...\n")
   
-  print(glue("Number of articles missing from SCOPUS: {articles_not_found}/{n_rows}"))
-  print(glue("Number of articles DOI found: {articles_doi_found}/{n_rows}"))
-  print(glue("Number of articles with DOI missing: {articles_doi_missing}/{n_rows}"))
-  print(glue("Number of articles with multiple results: {articles_more_than_one_found}/{n_rows}"))
+  print(glue::glue("Number of articles missing from SCOPUS: {articles_not_found}/{n_rows}"))
+  print(glue::glue("Number of articles DOI found: {articles_doi_found}/{n_rows}"))
+  print(glue::glue("Number of articles with DOI missing: {articles_doi_missing}/{n_rows}"))
+  print(glue::glue("Number of articles with multiple results: {articles_more_than_one_found}/{n_rows}"))
   
   articles_with_doi <- 
     tbl %>% 
-    filter(DI != "Several articles found" & DI != "No DOI" & DI != "Article not found") %>% 
-    select(article_id, DI) %>% 
-    arrange(as.numeric(article_id))
+      filter(DI != "Several articles found" & DI != "No DOI" & DI != "Article not found") %>% 
+      select(article_id, DI) %>% 
+      arrange(as.numeric(article_id))
   
   articles_no_doi <- 
     tbl %>% 
