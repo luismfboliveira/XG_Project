@@ -28,17 +28,6 @@ keywords_used <-
 
   search_words <- str_c("\\b", keywords_used, "\\b", collapse = "|")
 
-flags <- all_data %>%
-  rowid_to_column("article_id") %>% 
-  unite("new_keywords", DE:ID, na.rm = T, sep = ";", remove = F) %>%
-  mutate(new_keywords = str_squish(str_replace_all(new_keywords, ";;", "; "))) %>%
-  select(article_id, new_keywords) %>% 
-  separate_rows(new_keywords, sep = "; ") %>% 
-  separate_rows(new_keywords, sep = ";")
-
-flags %>% 
-left_join(keywords_used, by = c("new_keywords" = "new_keywords")) %>% View()
-
 # flags per article
 flags <- all_data %>%
   rowid_to_column("article_id") %>% 
